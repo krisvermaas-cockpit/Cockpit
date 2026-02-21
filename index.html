@@ -17,26 +17,16 @@
 
         body {
             font-family: 'Google Sans', 'SF Pro Text', sans-serif;
-            margin: 0;
-            background-color: var(--gemini-bg);
-            color: var(--text-main);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; background-color: var(--gemini-bg); color: var(--text-main);
+            display: flex; height: 100vh; overflow: hidden;
         }
 
-        /* Sidebar */
+        /* Sidebar & Nav */
         .sidebar {
-            width: var(--sidebar-width);
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(0,0,0,0.05);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            transition: transform 0.3s ease;
-            z-index: 1000;
+            width: var(--sidebar-width); background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05);
+            padding: 24px; display: flex; flex-direction: column; gap: 20px;
+            transition: transform 0.3s ease; z-index: 1000;
         }
 
         @media (max-width: 768px) {
@@ -55,38 +45,31 @@
         }
         .role-tile.active { background: #d3e3fd; border-color: var(--gemini-accent); font-weight: 500; }
 
-        /* Content */
+        /* Content Area */
         .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
         
         .prompt-box {
             background: var(--gemini-card); border-radius: 28px; padding: 16px 24px;
             box-shadow: 0 1px 6px rgba(32,33,36,0.1); width: 100%; max-width: 800px;
-            margin-bottom: 30px;
+            margin-bottom: 30px; display: flex; flex-direction: column; gap: 10px;
         }
 
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 800px; }
         .glass-card { background: var(--gemini-card); border-radius: 24px; padding: 24px; border: 1px solid #e3e3e3; }
         
         /* Week Grid */
-        .week-grid { 
-            display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; 
-            width: 100%; max-width: 800px; margin-top: 40px; padding-bottom: 40px;
-        }
-        .week-day { background: white; border-radius: 12px; padding: 10px; min-height: 120px; border: 1px solid #e3e3e3; font-size: 0.75rem; }
+        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; width: 100%; max-width: 800px; margin-top: 40px; padding-bottom: 40px; }
+        .week-day { background: white; border-radius: 12px; padding: 10px; min-height: 100px; border: 1px solid #e3e3e3; font-size: 0.75rem; }
         .week-day.today { border-color: var(--gemini-accent); background: #f8faff; }
         .week-day-title { font-weight: 600; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
 
         .overdue { color: var(--danger); font-weight: bold; font-size: 0.7rem; margin-right: 5px; }
-        
         ul { list-style: none; padding: 0; }
-        li { padding: 10px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
+        li { padding: 12px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
         
-        .complete-btn {
-            background: white; border: 1px solid #dadce0; color: var(--gemini-accent);
-            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-        }
-        
+        .complete-btn { background: white; border: 1px solid #dadce0; color: var(--gemini-accent); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; }
         .goal-item { background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid var(--gemini-accent); cursor: pointer; }
+        .mail-btn { text-decoration: none; font-size: 1.1rem; margin-left: 10px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -118,24 +101,24 @@
 
     <main class="main-content">
         <div style="width: 100%; max-width: 800px; display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-            <button class="mobile-toggle" onclick="toggleMenu()" style="display: block;">☰</button>
+            <button class="mobile-toggle" onclick="toggleMenu()">☰</button>
             <h1 style="margin:0;">Vandaag, <span style="color: var(--gemini-accent);">Kris</span></h1>
         </div>
 
         <div class="prompt-box">
-          <div style="display:flex; gap:10px; border-top:1px solid #eee; padding-top:10px;">
-              <select id="roleSelect">...</select>
-              <input id="dateInput" placeholder="Wanneer?">
-              <input id="linkInput" placeholder="🔗 Plak link (Spark, etc)" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; flex:1;">
-          </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input id="taskInput" placeholder="Wat ga je doen? (bv: Mailen naar #Bas)" style="flex:1; border:none; outline:none; font-size:1.1rem;">
+                <button onclick="addTask()" style="background:var(--gemini-accent); color:white; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer;">➔</button>
+            </div>
             <div style="display:flex; gap:10px; border-top:1px solid #eee; padding-top:10px;">
-                <select id="roleSelect" style="border-radius:15px; border:1px solid #eee; padding:5px 10px;">
+                <select id="roleSelect" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; font-size: 0.8rem;">
                     <option value="Werk">Werk</option>
                     <option value="Thuis">Thuis</option>
                     <option value="Gezondheid">Health</option>
                     <option value="CommunitySocial">Sociaal</option>
                 </select>
-                <input id="dateInput" placeholder="Wanneer? (morgen, ma)" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; flex:1;">
+                <input id="dateInput" placeholder="Wanneer? (ma, morgen)" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; flex:1; font-size: 0.8rem;">
+                <input id="linkInput" placeholder="🔗 Spark link" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; flex:1.5; font-size: 0.8rem;">
             </div>
         </div>
 
@@ -145,7 +128,7 @@
                 <ul id="today-list"></ul>
             </section>
             <section class="glass-card">
-                <h2>Inbox (te plannen) 📥</h2>
+                <h2>Inbox 📥</h2>
                 <ul id="inbox-list"></ul>
             </section>
         </div>
@@ -164,7 +147,6 @@
         let activeRoles = [];
 
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
-
         function formatDateLocalISO(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -180,107 +162,88 @@
             if (val === 'vandaag') return d;
             const days = {ma:1,maandag:1,di:2,dinsdag:2,wo:3,woensdag:3,do:4,donderdag:4,vr:5,vrijdag:5,za:6,zaterdag:6,zo:0,zondag:0};
             if (days[val] !== undefined) {
-                const target = days[val];
-                const current = d.getDay();
+                const target = days[val]; const current = d.getDay();
                 let diff = (target - current + 7) % 7;
-                if (diff === 0) diff = 7;
-                d.setDate(d.getDate() + diff);
+                if (diff === 0) diff = 7; d.setDate(d.getDate() + diff);
             }
             return d;
         }
 
-// --- Nieuwe Edit & Verplaats Functie ---
-async function manageTask(id, currentVerb, currentObject, currentDate) {
-    const action = prompt(
-        `Taak: "${currentVerb} ${currentObject}"\n\n` +
-        `Wat wil je doen?\n` +
-        `1. Tekst aanpassen\n` +
-        `2. Verplaatsen naar Morgen\n` +
-        `3. Verplaatsen naar Datum (bv. 'ma' of '2026-03-01')\n` +
-        `4. Terug naar Inbox`, 
-        "1"
-    );
-
-    if (action === "1") {
-        const newText = prompt("Nieuwe tekst (Werkwoord Object):", `${currentVerb} ${currentObject}`);
-        if (newText) {
-            const parts = newText.split(' ');
-            await supabaseClient.from('inbox_items').update({ 
-                verb: parts[0], 
-                object: parts.slice(1).join(' ') 
-            }).eq('id', id);
+        async function manageTask(id, currentVerb, currentObject, currentUrl) {
+            const action = prompt(`Taak: "${currentVerb} ${currentObject}"\n1: Tekst aanpassen | 2: Morgen | 3: Datum kiezen | 4: Terug naar Inbox`, "1");
+            if (action === "1") {
+                const t = prompt("Nieuwe tekst:", `${currentVerb} ${currentObject}`);
+                if (t) { const p = t.split(' '); await supabaseClient.from('inbox_items').update({ verb: p[0], object: p.slice(1).join(' ') }).eq('id', id); }
+            } else if (action === "2") {
+                const m = new Date(); m.setDate(m.getDate() + 1);
+                await supabaseClient.from('inbox_items').update({ planned_for: formatDateLocalISO(m), status: 'planned' }).eq('id', id);
+            } else if (action === "3") {
+                const d = parseHumanDate(prompt("Nieuwe datum:"));
+                if (d) await supabaseClient.from('inbox_items').update({ planned_for: formatDateLocalISO(d), status: 'planned' }).eq('id', id);
+            } else if (action === "4") {
+                await supabaseClient.from('inbox_items').update({ status: 'inbox', planned_for: null }).eq('id', id);
+            }
+            refreshAll();
         }
-    } else if (action === "2") {
-        const morgen = new Date();
-        morgen.setDate(morgen.getDate() + 1);
-        await supabaseClient.from('inbox_items').update({ 
-            planned_for: formatDateLocalISO(morgen),
-            status: 'planned'
-        }).eq('id', id);
-    } else if (action === "3") {
-        const newDateText = prompt("Nieuwe datum (vandaag, morgen, ma, di...):");
-        const parsed = parseHumanDate(newDateText);
-        if (parsed) {
-            await supabaseClient.from('inbox_items').update({ 
-                planned_for: formatDateLocalISO(parsed),
-                status: 'planned'
-            }).eq('id', id);
-        }
-    } else if (action === "4") {
-        await supabaseClient.from('inbox_items').update({ 
-            status: 'inbox', 
-            planned_for: null 
-        }).eq('id', id);
-    }
-    refreshAll();
-}
 
-async function loadTodayTasks() {
-    const todayISO = formatDateLocalISO(new Date());
-    const { data } = await supabaseClient.from('inbox_items').select('*').lte('planned_for', todayISO).neq('status', 'done');
-    document.getElementById('today-list').innerHTML = (data || []).map(t => {
-        const isOverdue = t.planned_for < todayISO;
-        return `
-      <li>
-    <div style="cursor:pointer; flex:1;" onclick="manageTask(...)">
-        <strong>${t.verb}</strong> ${t.object} ${linkButton}
-    </div>
-    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
-</li>`;
-    }).join('') || 'Geniet van je rust.';
-}
+        async function loadTodayTasks() {
+            const today = formatDateLocalISO(new Date());
+            const { data } = await supabaseClient.from('inbox_items').select('*').lte('planned_for', today).neq('status', 'done');
+            document.getElementById('today-list').innerHTML = (data || []).map(t => `
+                <li>
+                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', '${t.source_url}')">
+                        ${t.planned_for < today ? '<span class="overdue">OVER TIJD</span>' : ''}
+                        <strong>${t.verb}</strong> ${t.object}
+                        ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
+                    </div>
+                    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+                </li>`).join('') || 'Rustig dagje!';
+        }
 
         async function loadInbox() {
-    let query = supabaseClient.from('inbox_items').select('*').eq('status', 'inbox');
-    if (activeRoles.length) query = query.in('role', activeRoles);
-    const { data } = await query;
-    document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
-        <li>
-    <div style="cursor:pointer; flex:1;" onclick="manageTask(...)">
-        <strong>${t.verb}</strong> ${t.object} ${linkButton}
-    </div>
-    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
-</li>`).join('');
- }
+            let q = supabaseClient.from('inbox_items').select('*').eq('status', 'inbox');
+            if (activeRoles.length) q = q.in('role', activeRoles);
+            const { data } = await q;
+            document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
+                <li>
+                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', '${t.source_url}')">
+                        <strong>${t.verb}</strong> ${t.object}
+                        ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
+                    </div>
+                    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+                </li>`).join('');
+        }
 
         async function loadWeekTasks() {
-            const grid = document.getElementById('week-grid');
-            grid.innerHTML = '';
+            const grid = document.getElementById('week-grid'); grid.innerHTML = '';
             const today = new Date();
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-
+            const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
             for (let i = 0; i < 7; i++) {
                 const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i);
-                const dateISO = formatDateLocalISO(d);
-                const dayDiv = document.createElement('div');
-                dayDiv.className = `week-day ${dateISO === formatDateLocalISO(today) ? 'today' : ''}`;
-                dayDiv.innerHTML = `<div class="week-day-title">${d.toLocaleDateString('nl-NL', {weekday:'short', day:'numeric'})}</div><div id="w-${dateISO}"></div>`;
-                grid.appendChild(dayDiv);
-
-                const { data } = await supabaseClient.from('inbox_items').select('*').eq('planned_for', dateISO).neq('status', 'done');
-                document.getElementById(`w-${dateISO}`).innerHTML = (data || []).map(t => `<div style="font-size:0.7rem; margin-bottom:4px;">• ${t.verb} ${t.object}</div>`).join('');
+                const iso = formatDateLocalISO(d);
+                const div = document.createElement('div');
+                div.className = `week-day ${iso === formatDateLocalISO(today) ? 'today' : ''}`;
+                div.innerHTML = `<div class="week-day-title">${d.toLocaleDateString('nl-NL', {weekday:'short', day:'numeric'})}</div><div id="w-${iso}"></div>`;
+                grid.appendChild(div);
+                const { data } = await supabaseClient.from('inbox_items').select('*').eq('planned_for', iso).neq('status', 'done');
+                document.getElementById(`w-${iso}`).innerHTML = (data || []).map(t => `<div style="font-size:0.7rem; margin-bottom:4px; cursor:pointer;" onclick="manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url}')">• ${t.verb} ${t.object}</div>`).join('');
             }
+        }
+
+        async function addTask() {
+            const verb_obj = document.getElementById('taskInput').value;
+            const role = document.getElementById('roleSelect').value;
+            const date = parseHumanDate(document.getElementById('dateInput').value);
+            const url = document.getElementById('linkInput').value;
+            if (!verb_obj) return;
+            const p = verb_obj.split(' ');
+            await supabaseClient.from('inbox_items').insert({
+                verb: p[0], object: p.slice(1).join(' '), role: role,
+                status: date ? 'planned' : 'inbox', planned_for: date ? formatDateLocalISO(date) : null,
+                source_url: url || null
+            });
+            document.getElementById('taskInput').value = ''; document.getElementById('dateInput').value = ''; document.getElementById('linkInput').value = '';
+            refreshAll();
         }
 
         async function loadGoals(role) {
@@ -296,60 +259,23 @@ async function loadTodayTasks() {
             document.getElementById('projectTree').innerHTML = (data || []).filter(p => !activeRoles.length || activeRoles.includes(p.role)).map(p => `<div class="goal-item" style="border-left-color:#ccc">#${p.name}</div>`).join('');
         }
 
-        async function addTask() {
-    const input = document.getElementById('taskInput').value;
-    const role = document.getElementById('roleSelect').value;
-    const dateStr = document.getElementById('dateInput').value;
-    const linkInput = document.getElementById('linkInput'); // Voeg dit veld toe aan je HTML (zie hieronder)
-    
-    if (!input) return;
-    const parts = input.split(' ');
-    const plannedDate = parseHumanDate(dateStr);
-    
-    await supabaseClient.from('inbox_items').insert({ 
-        verb: parts[0], 
-        object: parts.slice(1).join(' '), 
-        role: role, 
-        status: plannedDate ? 'planned' : 'inbox',
-        planned_for: plannedDate ? formatDateLocalISO(plannedDate) : null,
-        source_url: linkInput ? linkInput.value : null // Sla de Spark link op
-    });
-    
-    document.getElementById('taskInput').value = '';
-    document.getElementById('dateInput').value = '';
-    if(linkInput) linkInput.value = '';
-    refreshAll();
-}
-
-        async function completeTask(id) {
-            await supabaseClient.from('inbox_items').update({ status: 'done' }).eq('id', id);
-            refreshAll();
-        }
-
-        function triggerNewGoal() {
-            const role = activeRoles[0];
-            if (!role) return alert("Selecteer eerst een thema (tegel)");
-            const title = prompt("Nieuw doel voor " + role);
-            if (title) supabaseClient.from('goals').insert({ role, title, quarter: 1, year: 2026 }).then(() => loadGoals(role));
-        }
-
-        async function editGoal(id, title, ref) {
-            const newRef = prompt(`Verfijning voor ${title}:`, ref);
-            if (newRef !== null) {
-                await supabaseClient.from('goals').update({ refinement: newRef }).eq('id', id);
-                loadGoals(activeRoles[0]);
-            }
-        }
-
+        async function completeTask(id) { await supabaseClient.from('inbox_items').update({ status: 'done' }).eq('id', id); refreshAll(); }
         function refreshAll() { loadTodayTasks(); loadInbox(); loadWeekTasks(); loadSidebarProjects(); }
+        function triggerNewGoal() {
+            const r = activeRoles[0]; if (!r) return alert("Selecteer eerst een thema");
+            const t = prompt("Nieuw doel voor " + r);
+            if (t) supabaseClient.from('goals').insert({ role: r, title: t, quarter: 1, year: 2026 }).then(() => loadGoals(r));
+        }
+        async function editGoal(id, title, ref) {
+            const r = prompt(`Focus voor ${title}:`, ref);
+            if (r !== null) { await supabaseClient.from('goals').update({ refinement: r }).eq('id', id); loadGoals(activeRoles[0]); }
+        }
 
         document.querySelectorAll('.role-tile').forEach(tile => {
             tile.addEventListener('click', function() {
-                const r = this.dataset.role;
-                activeRoles = activeRoles.includes(r) ? [] : [r];
+                const r = this.dataset.role; activeRoles = activeRoles.includes(r) ? [] : [r];
                 document.querySelectorAll('.role-tile').forEach(t => t.classList.toggle('active', activeRoles.includes(t.dataset.role)));
-                loadGoals(activeRoles[0]);
-                refreshAll();
+                loadGoals(activeRoles[0]); refreshAll();
             });
         });
 
