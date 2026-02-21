@@ -123,10 +123,11 @@
         </div>
 
         <div class="prompt-box">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <input id="taskInput" placeholder="Wat ga je doen? (bv: Mailen naar #Bas)" style="flex:1; border:none; outline:none; font-size:1.1rem;">
-                <button onclick="addTask()" style="background:var(--gemini-accent); color:white; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer;">➔</button>
-            </div>
+          <div style="display:flex; gap:10px; border-top:1px solid #eee; padding-top:10px;">
+              <select id="roleSelect">...</select>
+              <input id="dateInput" placeholder="Wanneer?">
+              <input id="linkInput" placeholder="🔗 Plak link (Spark, etc)" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; flex:1;">
+          </div>
             <div style="display:flex; gap:10px; border-top:1px solid #eee; padding-top:10px;">
                 <select id="roleSelect" style="border-radius:15px; border:1px solid #eee; padding:5px 10px;">
                     <option value="Werk">Werk</option>
@@ -240,13 +241,12 @@ async function loadTodayTasks() {
     document.getElementById('today-list').innerHTML = (data || []).map(t => {
         const isOverdue = t.planned_for < todayISO;
         return `
-        <li>
-            <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', '${t.planned_for}')">
-                ${isOverdue ? '<span class="overdue">OVER TIJD</span>' : ''}
-                <strong>${t.verb}</strong> ${t.object}
-            </div>
-            <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
-        </li>`;
+      <li>
+    <div style="cursor:pointer; flex:1;" onclick="manageTask(...)">
+        <strong>${t.verb}</strong> ${t.object} ${linkButton}
+    </div>
+    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+</li>`;
     }).join('') || 'Geniet van je rust.';
 }
 
@@ -256,11 +256,11 @@ async function loadTodayTasks() {
     const { data } = await query;
     document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
         <li>
-            <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', null)">
-                <strong>${t.verb}</strong> ${t.object}
-            </div>
-            <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
-        </li>`).join('');
+    <div style="cursor:pointer; flex:1;" onclick="manageTask(...)">
+        <strong>${t.verb}</strong> ${t.object} ${linkButton}
+    </div>
+    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+</li>`).join('');
  }
 
         async function loadWeekTasks() {
@@ -297,23 +297,29 @@ async function loadTodayTasks() {
         }
 
         async function addTask() {
-            const input = document.getElementById('taskInput').value;
-            const role = document.getElementById('roleSelect').value;
-            const dateStr = document.getElementById('dateInput').value;
-            if (!input) return;
-            const parts = input.split(' ');
-            const plannedDate = parseHumanDate(dateStr);
-            await supabaseClient.from('inbox_items').insert({ 
-                verb: parts[0], 
-                object: parts.slice(1).join(' '), 
-                role: role, 
-                status: plannedDate ? 'planned' : 'inbox',
-                planned_for: plannedDate ? formatDateLocalISO(plannedDate) : null
-            });
-            document.getElementById('taskInput').value = '';
-            document.getElementById('dateInput').value = '';
-            refreshAll();
-        }
+    const input = document.getElementById('taskInput').value;
+    const role = document.getElementById('roleSelect').value;
+    const dateStr = document.getElementById('dateInput').value;
+    const linkInput = document.getElementById('linkInput'); // Voeg dit veld toe aan je HTML (zie hieronder)
+    
+    if (!input) return;
+    const parts = input.split(' ');
+    const plannedDate = parseHumanDate(dateStr);
+    
+    await supabaseClient.from('inbox_items').insert({ 
+        verb: parts[0], 
+        object: parts.slice(1).join(' '), 
+        role: role, 
+        status: plannedDate ? 'planned' : 'inbox',
+        planned_for: plannedDate ? formatDateLocalISO(plannedDate) : null,
+        source_url: linkInput ? linkInput.value : null // Sla de Spark link op
+    });
+    
+    document.getElementById('taskInput').value = '';
+    document.getElementById('dateInput').value = '';
+    if(linkInput) linkInput.value = '';
+    refreshAll();
+}
 
         async function completeTask(id) {
             await supabaseClient.from('inbox_items').update({ status: 'done' }).eq('id', id);
