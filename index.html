@@ -12,10 +12,11 @@
             --text-main: #1f1f1f;
             --text-muted: #5f6368;
             --sidebar-width: 260px;
+            --danger: #d93025;
         }
 
         body {
-            font-family: 'Google Sans', 'SF Pro Text', Roboto, sans-serif;
+            font-family: 'Google Sans', 'SF Pro Text', sans-serif;
             margin: 0;
             background-color: var(--gemini-bg);
             color: var(--text-main);
@@ -24,7 +25,7 @@
             overflow: hidden;
         }
 
-        /* Sidebar & Mobiele navigatie */
+        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
             background: rgba(255, 255, 255, 0.8);
@@ -38,55 +39,61 @@
             z-index: 1000;
         }
 
-        .brand { font-size: 1.5rem; font-weight: 600; color: var(--gemini-accent); display: flex; justify-content: space-between; align-items: center; }
-
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
             .sidebar.active { transform: translateX(0); }
-            .main-content { padding: 20px !important; }
-            .dashboard-grid { grid-template-columns: 1fr !important; }
-            .mobile-toggle { display: block !important; }
+            .week-grid { grid-template-columns: 1fr !important; }
         }
 
         .mobile-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        @media (max-width: 768px) { .mobile-toggle { display: block; } }
 
         .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .role-tile {
             background: var(--gemini-card); border: 1px solid #e3e3e3; border-radius: 16px;
-            padding: 12px; text-align: center; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+            padding: 12px; text-align: center; cursor: pointer; font-size: 0.85rem;
         }
         .role-tile.active { background: #d3e3fd; border-color: var(--gemini-accent); font-weight: 500; }
 
-        /* Main Content */
+        /* Content */
         .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
-        .header { width: 100%; max-width: 800px; margin-bottom: 30px; }
-
+        
         .prompt-box {
             background: var(--gemini-card); border-radius: 28px; padding: 16px 24px;
             box-shadow: 0 1px 6px rgba(32,33,36,0.1); width: 100%; max-width: 800px;
-            display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 800px; }
         .glass-card { background: var(--gemini-card); border-radius: 24px; padding: 24px; border: 1px solid #e3e3e3; }
         
-        ul { list-style: none; padding: 0; }
-        li { padding: 12px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
-
-        .complete-btn {
-            background: white; border: 1px solid #dadce0; color: #1a73e8;
-            width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
+        /* Week Grid */
+        .week-grid { 
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; 
+            width: 100%; max-width: 800px; margin-top: 40px; padding-bottom: 40px;
         }
+        .week-day { background: white; border-radius: 12px; padding: 10px; min-height: 120px; border: 1px solid #e3e3e3; font-size: 0.75rem; }
+        .week-day.today { border-color: var(--gemini-accent); background: #f8faff; }
+        .week-day-title { font-weight: 600; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
 
+        .overdue { color: var(--danger); font-weight: bold; font-size: 0.7rem; margin-right: 5px; }
+        
+        ul { list-style: none; padding: 0; }
+        li { padding: 10px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
+        
+        .complete-btn {
+            background: white; border: 1px solid #dadce0; color: var(--gemini-accent);
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+        }
+        
         .goal-item { background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid var(--gemini-accent); cursor: pointer; }
     </style>
 </head>
 <body>
 
     <nav class="sidebar" id="sidebar">
-        <div class="brand">
-            Cockpit
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size: 1.5rem; font-weight: 600; color: var(--gemini-accent);">Cockpit</div>
             <button class="mobile-toggle" onclick="toggleMenu()">✕</button>
         </div>
         
@@ -110,14 +117,14 @@
     </nav>
 
     <main class="main-content">
-        <div style="width: 100%; max-width: 800px; display: flex; align-items: center; gap: 15px;">
+        <div style="width: 100%; max-width: 800px; display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
             <button class="mobile-toggle" onclick="toggleMenu()" style="display: block;">☰</button>
-            <h1>Focus, <span style="color: var(--gemini-accent);">Kris</span></h1>
+            <h1 style="margin:0;">Vandaag, <span style="color: var(--gemini-accent);">Kris</span></h1>
         </div>
 
         <div class="prompt-box">
             <div style="display:flex; align-items:center; gap:10px;">
-                <input id="taskInput" placeholder="Wat ga je doen?" style="flex:1; border:none; outline:none; font-size:1.1rem;">
+                <input id="taskInput" placeholder="Wat ga je doen? (bv: Mailen naar #Bas)" style="flex:1; border:none; outline:none; font-size:1.1rem;">
                 <button onclick="addTask()" style="background:var(--gemini-accent); color:white; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer;">➔</button>
             </div>
             <div style="display:flex; gap:10px; border-top:1px solid #eee; padding-top:10px;">
@@ -127,7 +134,7 @@
                     <option value="Gezondheid">Health</option>
                     <option value="CommunitySocial">Sociaal</option>
                 </select>
-                <input id="dateInput" placeholder="Wanneer?" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; flex:1;">
+                <input id="dateInput" placeholder="Wanneer? (morgen, ma)" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; flex:1;">
             </div>
         </div>
 
@@ -137,10 +144,13 @@
                 <ul id="today-list"></ul>
             </section>
             <section class="glass-card">
-                <h2>Inbox 📥</h2>
-                <ul id="list"></ul>
+                <h2>Inbox (te plannen) 📥</h2>
+                <ul id="inbox-list"></ul>
             </section>
         </div>
+
+        <h2 style="width: 100%; max-width: 800px; margin-top: 40px; font-size: 1rem; color: var(--text-muted);">Deze Week</h2>
+        <div id="week-grid" class="week-grid"></div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -150,61 +160,99 @@
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2djcW93dm55bW5wdXZ4ZGVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTA1NTksImV4cCI6MjA4NjM4NjU1OX0.pQkqm6JOyv6mbxn-gl00HDCG0uahRziwhX3tcIaaqhA"
         );
 
-        let activeProjectId = null;
         let activeRoles = [];
 
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
 
         function formatDateLocalISO(date) {
-            return date.toISOString().split('T')[0];
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
-        // --- Data laden ---
-        async function refreshAll() {
-            loadTodayTasks();
-            loadTasks();
-            loadSidebarProjects();
+        function parseHumanDate(text) {
+            if (!text) return null;
+            const val = text.toLowerCase().trim();
+            const d = new Date(); d.setHours(0,0,0,0);
+            if (val === 'morgen') d.setDate(d.getDate() + 1);
+            if (val === 'vandaag') return d;
+            const days = {ma:1,maandag:1,di:2,dinsdag:2,wo:3,woensdag:3,do:4,donderdag:4,vr:5,vrijdag:5,za:6,zaterdag:6,zo:0,zondag:0};
+            if (days[val] !== undefined) {
+                const target = days[val];
+                const current = d.getDay();
+                let diff = (target - current + 7) % 7;
+                if (diff === 0) diff = 7;
+                d.setDate(d.getDate() + diff);
+            }
+            return d;
         }
 
         async function loadTodayTasks() {
-            const today = formatDateLocalISO(new Date());
-            const { data } = await supabaseClient.from('inbox_items').select('*').lte('planned_for', today).neq('status', 'done');
-            const list = document.getElementById('today-list');
-            list.innerHTML = (data || []).map(t => `<li><div><strong>${t.verb}</strong> ${t.object}</div><button class="complete-btn" onclick="completeTask('${t.id}')">✓</button></li>`).join('') || 'Geen taken.';
+            const todayISO = formatDateLocalISO(new Date());
+            const { data } = await supabaseClient.from('inbox_items').select('*').lte('planned_for', todayISO).neq('status', 'done');
+            document.getElementById('today-list').innerHTML = (data || []).map(t => {
+                const isOverdue = t.planned_for < todayISO;
+                return `<li><div>${isOverdue ? '<span class="overdue">OVER TIJD</span>' : ''}<strong>${t.verb}</strong> ${t.object}</div><button class="complete-btn" onclick="completeTask('${t.id}')">✓</button></li>`;
+            }).join('') || 'Geniet van je rust.';
         }
 
-        async function loadTasks() {
+        async function loadInbox() {
             let query = supabaseClient.from('inbox_items').select('*').eq('status', 'inbox');
             if (activeRoles.length) query = query.in('role', activeRoles);
             const { data } = await query;
-            document.getElementById('list').innerHTML = (data || []).map(t => `<li><div><strong>${t.verb}</strong> ${t.object}</div><button class="complete-btn" onclick="completeTask('${t.id}')">✓</button></li>`).join('');
+            document.getElementById('inbox-list').innerHTML = (data || []).map(t => `<li><div><strong>${t.verb}</strong> ${t.object}</div><button class="complete-btn" onclick="completeTask('${t.id}')">✓</button></li>`).join('');
+        }
+
+        async function loadWeekTasks() {
+            const grid = document.getElementById('week-grid');
+            grid.innerHTML = '';
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i);
+                const dateISO = formatDateLocalISO(d);
+                const dayDiv = document.createElement('div');
+                dayDiv.className = `week-day ${dateISO === formatDateLocalISO(today) ? 'today' : ''}`;
+                dayDiv.innerHTML = `<div class="week-day-title">${d.toLocaleDateString('nl-NL', {weekday:'short', day:'numeric'})}</div><div id="w-${dateISO}"></div>`;
+                grid.appendChild(dayDiv);
+
+                const { data } = await supabaseClient.from('inbox_items').select('*').eq('planned_for', dateISO).neq('status', 'done');
+                document.getElementById(`w-${dateISO}`).innerHTML = (data || []).map(t => `<div style="font-size:0.7rem; margin-bottom:4px;">• ${t.verb} ${t.object}</div>`).join('');
+            }
         }
 
         async function loadGoals(role) {
-            const container = document.getElementById('goals-section');
-            if (!role) { container.style.display = 'none'; return; }
-            container.style.display = 'block';
+            const section = document.getElementById('goals-section');
+            if (!role) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
             const { data } = await supabaseClient.from('goals').select('*').eq('role', role).eq('quarter', 1);
-            document.getElementById('goals-list').innerHTML = (data || []).map(g => `
-                <div class="goal-item" onclick="editGoal('${g.id}', '${g.title}', '${g.refinement || ''}')">
-                    <strong>${g.title}</strong><br><small>${g.refinement || '+ focus'}</small>
-                </div>`).join('') || `<p onclick="triggerNewGoal('${role}')" style="cursor:pointer; font-size:0.8rem;">+ Voeg doel toe</p>`;
+            document.getElementById('goals-list').innerHTML = (data || []).map(g => `<div class="goal-item" onclick="editGoal('${g.id}','${g.title}','${g.refinement || ''}')"><strong>${g.title}</strong><br><small>${g.refinement || '+ focus'}</small></div>`).join('');
         }
 
         async function loadSidebarProjects() {
             const { data } = await supabaseClient.from('projects').select('*');
-            const filtered = (data || []).filter(p => activeRoles.length === 0 || activeRoles.includes(p.role));
-            document.getElementById('projectTree').innerHTML = filtered.map(p => `<div class="goal-item" onclick="selectProject('${p.id}')">#${p.name}</div>`).join('');
+            document.getElementById('projectTree').innerHTML = (data || []).filter(p => !activeRoles.length || activeRoles.includes(p.role)).map(p => `<div class="goal-item" style="border-left-color:#ccc">#${p.name}</div>`).join('');
         }
 
-        // --- Acties ---
         async function addTask() {
             const input = document.getElementById('taskInput').value;
             const role = document.getElementById('roleSelect').value;
+            const dateStr = document.getElementById('dateInput').value;
             if (!input) return;
             const parts = input.split(' ');
-            await supabaseClient.from('inbox_items').insert({ verb: parts[0], object: parts.slice(1).join(' '), role: role, status: 'inbox' });
+            const plannedDate = parseHumanDate(dateStr);
+            await supabaseClient.from('inbox_items').insert({ 
+                verb: parts[0], 
+                object: parts.slice(1).join(' '), 
+                role: role, 
+                status: plannedDate ? 'planned' : 'inbox',
+                planned_for: plannedDate ? formatDateLocalISO(plannedDate) : null
+            });
             document.getElementById('taskInput').value = '';
+            document.getElementById('dateInput').value = '';
             refreshAll();
         }
 
@@ -215,41 +263,31 @@
 
         function triggerNewGoal() {
             const role = activeRoles[0];
-            if (!role) return alert("Kies eerst een thema");
-            addNewGoal(role);
+            if (!role) return alert("Selecteer eerst een thema (tegel)");
+            const title = prompt("Nieuw doel voor " + role);
+            if (title) supabaseClient.from('goals').insert({ role, title, quarter: 1, year: 2026 }).then(() => loadGoals(role));
         }
 
-        async function addNewGoal(role) {
-            const title = prompt("Nieuw doel:");
-            if (title) {
-                await supabaseClient.from('goals').insert({ role, title, quarter: 1, year: 2026 });
-                loadGoals(role);
-            }
-        }
-
-        async function editGoal(id, title, refinement) {
-            const res = prompt(`Verfijning voor ${title}:`, refinement);
-            if (res !== null) {
-                await supabaseClient.from('goals').update({ refinement: res }).eq('id', id);
+        async function editGoal(id, title, ref) {
+            const newRef = prompt(`Verfijning voor ${title}:`, ref);
+            if (newRef !== null) {
+                await supabaseClient.from('goals').update({ refinement: newRef }).eq('id', id);
                 loadGoals(activeRoles[0]);
             }
         }
 
-        // --- Role Tiles ---
+        function refreshAll() { loadTodayTasks(); loadInbox(); loadWeekTasks(); loadSidebarProjects(); }
+
         document.querySelectorAll('.role-tile').forEach(tile => {
             tile.addEventListener('click', function() {
-                const role = this.dataset.role;
-                activeRoles = activeRoles.includes(role) ? [] : [role];
-                
+                const r = this.dataset.role;
+                activeRoles = activeRoles.includes(r) ? [] : [r];
                 document.querySelectorAll('.role-tile').forEach(t => t.classList.toggle('active', activeRoles.includes(t.dataset.role)));
-                
                 loadGoals(activeRoles[0]);
                 refreshAll();
-                if (window.innerWidth < 768 && activeRoles.length > 0) { /* optioneel: sluit menu op mobiel na selectie */ }
             });
         });
 
-        // Start
         refreshAll();
     </script>
 </body>
