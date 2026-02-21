@@ -188,21 +188,80 @@
             return d;
         }
 
-        async function loadTodayTasks() {
-            const todayISO = formatDateLocalISO(new Date());
-            const { data } = await supabaseClient.from('inbox_items').select('*').lte('planned_for', todayISO).neq('status', 'done');
-            document.getElementById('today-list').innerHTML = (data || []).map(t => {
-                const isOverdue = t.planned_for < todayISO;
-                return `<li><div>${isOverdue ? '<span class="overdue">OVER TIJD</span>' : ''}<strong>${t.verb}</strong> ${t.object}</div><button class="complete-btn" onclick="completeTask('${t.id}')">✓</button></li>`;
-            }).join('') || 'Geniet van je rust.';
+// --- Nieuwe Edit & Verplaats Functie ---
+async function manageTask(id, currentVerb, currentObject, currentDate) {
+    const action = prompt(
+        `Taak: "${currentVerb} ${currentObject}"\n\n` +
+        `Wat wil je doen?\n` +
+        `1. Tekst aanpassen\n` +
+        `2. Verplaatsen naar Morgen\n` +
+        `3. Verplaatsen naar Datum (bv. 'ma' of '2026-03-01')\n` +
+        `4. Terug naar Inbox`, 
+        "1"
+    );
+
+    if (action === "1") {
+        const newText = prompt("Nieuwe tekst (Werkwoord Object):", `${currentVerb} ${currentObject}`);
+        if (newText) {
+            const parts = newText.split(' ');
+            await supabaseClient.from('inbox_items').update({ 
+                verb: parts[0], 
+                object: parts.slice(1).join(' ') 
+            }).eq('id', id);
         }
+    } else if (action === "2") {
+        const morgen = new Date();
+        morgen.setDate(morgen.getDate() + 1);
+        await supabaseClient.from('inbox_items').update({ 
+            planned_for: formatDateLocalISO(morgen),
+            status: 'planned'
+        }).eq('id', id);
+    } else if (action === "3") {
+        const newDateText = prompt("Nieuwe datum (vandaag, morgen, ma, di...):");
+        const parsed = parseHumanDate(newDateText);
+        if (parsed) {
+            await supabaseClient.from('inbox_items').update({ 
+                planned_for: formatDateLocalISO(parsed),
+                status: 'planned'
+            }).eq('id', id);
+        }
+    } else if (action === "4") {
+        await supabaseClient.from('inbox_items').update({ 
+            status: 'inbox', 
+            planned_for: null 
+        }).eq('id', id);
+    }
+    refreshAll();
+}
+
+async function loadTodayTasks() {
+    const todayISO = formatDateLocalISO(new Date());
+    const { data } = await supabaseClient.from('inbox_items').select('*').lte('planned_for', todayISO).neq('status', 'done');
+    document.getElementById('today-list').innerHTML = (data || []).map(t => {
+        const isOverdue = t.planned_for < todayISO;
+        return `
+        <li>
+            <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', '${t.planned_for}')">
+                ${isOverdue ? '<span class="overdue">OVER TIJD</span>' : ''}
+                <strong>${t.verb}</strong> ${t.object}
+            </div>
+            <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+        </li>`;
+    }).join('') || 'Geniet van je rust.';
+}
 
         async function loadInbox() {
-            let query = supabaseClient.from('inbox_items').select('*').eq('status', 'inbox');
-            if (activeRoles.length) query = query.in('role', activeRoles);
-            const { data } = await query;
-            document.getElementById('inbox-list').innerHTML = (data || []).map(t => `<li><div><strong>${t.verb}</strong> ${t.object}</div><button class="complete-btn" onclick="completeTask('${t.id}')">✓</button></li>`).join('');
-        }
+    let query = supabaseClient.from('inbox_items').select('*').eq('status', 'inbox');
+    if (activeRoles.length) query = query.in('role', activeRoles);
+    const { data } = await query;
+    document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
+        <li>
+            <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', null)">
+                <strong>${t.verb}</strong> ${t.object}
+            </div>
+            <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+        </li>`).join('');
+ }
 
         async function loadWeekTasks() {
             const grid = document.getElementById('week-grid');
