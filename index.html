@@ -6,74 +6,207 @@
     <title>Cockpit - Rust & Focus</title>
     <style>
         :root {
-            --gemini-bg: #f0f4f9;
-            --gemini-card: #ffffff;
-            --gemini-accent: #1a73e8;
-            --text-main: #1f1f1f;
-            --text-muted: #5f6368;
-            --sidebar-width: 260px;
-            --danger: #d93025;
-        }
+    --gemini-bg: #f0f4f9;
+    --gemini-card: #ffffff;
+    --gemini-accent: #1a73e8;
+    --text-main: #1f1f1f;
+    --text-muted: #5f6368;
+    --sidebar-width: 260px;
+    --danger: #d93025;
+}
 
-        body {
-            font-family: 'Google Sans', 'SF Pro Text', sans-serif;
-            margin: 0; background-color: var(--gemini-bg); color: var(--text-main);
-            display: flex; height: 100vh; overflow: hidden;
-        }
+body {
+    font-family: 'Google Sans', 'SF Pro Text', sans-serif;
+    margin: 0; background-color: var(--gemini-bg); color: var(--text-main);
+    display: flex; height: 100vh; overflow: hidden;
+}
 
-        /* Sidebar & Nav */
-        .sidebar {
-            width: var(--sidebar-width); background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05);
-            padding: 24px; display: flex; flex-direction: column; gap: 20px;
-            transition: transform 0.3s ease; z-index: 1000;
-        }
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(0,0,0,0.05);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+}
 
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
-            .week-grid { grid-template-columns: 1fr !important; }
-        }
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: 0; top: 0; bottom: 0;
+        transform: translateX(-100%);
+        width: 85vw;
+        max-width: 320px;
+    }
+    .sidebar.active { transform: translateX(0); }
+}
 
-        .mobile-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
-        @media (max-width: 768px) { .mobile-toggle { display: block; } }
+/* Sidebar overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 999;
+}
+.sidebar-overlay.active { display: block; }
 
-        .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .role-tile {
-            background: var(--gemini-card); border: 1px solid #e3e3e3; border-radius: 16px;
-            padding: 12px; text-align: center; cursor: pointer; font-size: 0.85rem;
-        }
-        .role-tile.active { background: #d3e3fd; border-color: var(--gemini-accent); font-weight: 500; }
+.mobile-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px;
+}
+@media (max-width: 768px) { .mobile-toggle { display: block; } }
 
-        /* Content Area */
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
-        
-        .prompt-box {
-            background: var(--gemini-card); border-radius: 28px; padding: 16px 24px;
-            box-shadow: 0 1px 6px rgba(32,33,36,0.1); width: 100%; max-width: 800px;
-            margin-bottom: 30px; display: flex; flex-direction: column; gap: 10px;
-        }
+.role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.role-tile {
+    background: var(--gemini-card);
+    border: 1px solid #e3e3e3;
+    border-radius: 16px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.role-tile.active {
+    background: #d3e3fd;
+    border-color: var(--gemini-accent);
+    font-weight: 500;
+}
 
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 800px; }
-        .glass-card { background: var(--gemini-card); border-radius: 24px; padding: 24px; border: 1px solid #e3e3e3; }
-        
-        /* Week Grid */
-        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; width: 100%; max-width: 800px; margin-top: 40px; padding-bottom: 40px; }
-        .week-day { background: white; border-radius: 12px; padding: 10px; min-height: 100px; border: 1px solid #e3e3e3; font-size: 0.75rem; }
-        .week-day.today { border-color: var(--gemini-accent); background: #f8faff; }
-        .week-day-title { font-weight: 600; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+/* Main content */
+.main-content {
+    flex: 1;
+    padding: 24px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
-        .overdue { color: var(--danger); font-weight: bold; font-size: 0.7rem; margin-right: 5px; }
-        ul { list-style: none; padding: 0; }
-        li { padding: 12px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
-        
-        .complete-btn { background: white; border: 1px solid #dadce0; color: var(--gemini-accent); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; }
-        .goal-item { background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid var(--gemini-accent); cursor: pointer; }
-        .mail-btn { text-decoration: none; font-size: 1.1rem; margin-left: 10px; vertical-align: middle; }
+@media (max-width: 768px) {
+    .main-content { padding: 16px 12px; }
+}
+
+.prompt-box {
+    background: var(--gemini-card);
+    border-radius: 28px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 6px rgba(32,33,36,0.1);
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Dashboard grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+    max-width: 800px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid { grid-template-columns: 1fr; }
+}
+
+.glass-card {
+    background: var(--gemini-card);
+    border-radius: 24px;
+    padding: 20px;
+    border: 1px solid #e3e3e3;
+}
+
+/* Week grid */
+.week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 24px;
+    padding-bottom: 40px;
+}
+
+@media (max-width: 768px) {
+    .week-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .week-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.week-day {
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+    min-height: 80px;
+    border: 1px solid #e3e3e3;
+    font-size: 0.75rem;
+}
+.week-day.today {
+    border-color: var(--gemini-accent);
+    background: #f8faff;
+}
+.week-day-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+}
+
+.overdue { color: var(--danger); font-weight: bold; font-size: 0.7rem; margin-right: 5px; }
+ul { list-style: none; padding: 0; margin: 0; }
+li { padding: 10px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
+
+.complete-btn {
+    background: white;
+    border: 1px solid #dadce0;
+    color: var(--gemini-accent);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.goal-item {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border-left: 4px solid var(--gemini-accent);
+    cursor: pointer;
+}
+.mail-btn {
+    text-decoration: none;
+    font-size: 1.1rem;
+    margin-left: 10px;
+    vertical-align: middle;
+}
     </style>
 </head>
 <body>
-
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleMenu()"></div>
     <nav class="sidebar" id="sidebar">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="font-size: 1.5rem; font-weight: 600; color: var(--gemini-accent);">Cockpit</div>
@@ -155,7 +288,10 @@
 
         let activeRoles = [];
 
-        function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
+        function toggleMenu() {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('sidebar-overlay').classList.toggle('active');
+}
         function formatDateLocalISO(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
