@@ -97,17 +97,21 @@
             <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 10px;">Projecten</div>
             <div id="projectTree"></div>
         </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: auto;">
+          "Kom tot Mij, allen die vermoeid en belast zijn, en Ik zal jullie rust geven."
+      </div>
     </nav>
 
     <main class="main-content">
         <div style="width: 100%; max-width: 800px; display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
             <button class="mobile-toggle" onclick="toggleMenu()">☰</button>
-            <h1 style="margin:0;">Vandaag, <span style="color: var(--gemini-accent);">Kris</span></h1>
+            <h1 style="margin:0;">Off we go, <span style="color: var(--gemini-accent);">Kris</span></h1>
+            <div class="quote">Plan je acties bewust, vanuit het juiste.</div>
         </div>
 
         <div class="prompt-box">
             <div style="display:flex; align-items:center; gap:10px;">
-                <input id="taskInput" placeholder="Wat ga je doen? (bv: Mailen naar #Bas)" style="flex:1; border:none; outline:none; font-size:1.1rem;">
+                <input id="taskInput" placeholder="Wat ga je doen? (bv: Mailen naar #Elsbeth)" style="flex:1; border:none; outline:none; font-size:1.1rem;">
                 <button onclick="addTask()" style="background:var(--gemini-accent); color:white; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer;">➔</button>
             </div>
             <div style="display:flex; gap:10px; border-top:1px solid #eee; padding-top:10px;">
@@ -197,7 +201,7 @@
                         ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
                     </div>
                     <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
-                </li>`).join('') || 'Rustig dagje!';
+                </li>`).join('') || 'Klaar voor vandaag!';
         }
 
         async function loadInbox() {
@@ -215,20 +219,55 @@
         }
 
         async function loadWeekTasks() {
-            const grid = document.getElementById('week-grid'); grid.innerHTML = '';
-            const today = new Date();
-            const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i);
-                const iso = formatDateLocalISO(d);
-                const div = document.createElement('div');
-                div.className = `week-day ${iso === formatDateLocalISO(today) ? 'today' : ''}`;
-                div.innerHTML = `<div class="week-day-title">${d.toLocaleDateString('nl-NL', {weekday:'short', day:'numeric'})}</div><div id="w-${iso}"></div>`;
-                grid.appendChild(div);
-                const { data } = await supabaseClient.from('inbox_items').select('*').eq('planned_for', iso).neq('status', 'done');
-                document.getElementById(`w-${iso}`).innerHTML = (data || []).map(t => `<div style="font-size:0.7rem; margin-bottom:4px; cursor:pointer;" onclick="manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url}')">• ${t.verb} ${t.object}</div>`).join('');
-            }
-        }
+    const grid = document.getElementById('week-grid');
+    grid.innerHTML = '';
+
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    // ÉÉN call voor de hele week
+    const { data } = await supabaseClient
+        .from('inbox_items')
+        .select('*')
+        .gte('planned_for', formatDateLocalISO(startOfWeek))
+        .lte('planned_for', formatDateLocalISO(endOfWeek))
+        .neq('status', 'done');
+
+    // Groepeer taken per datum in een Map
+    const tasksByDay = {};
+    (data || []).forEach(t => {
+        if (!tasksByDay[t.planned_for]) tasksByDay[t.planned_for] = [];
+        tasksByDay[t.planned_for].push(t);
+    });
+
+    // Bouw de grid
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(startOfWeek);
+        d.setDate(startOfWeek.getDate() + i);
+        const iso = formatDateLocalISO(d);
+
+        const div = document.createElement('div');
+        div.className = `week-day ${iso === formatDateLocalISO(today) ? 'today' : ''}`;
+        
+        const dayTasks = tasksByDay[iso] || [];
+        div.innerHTML = `
+            <div class="week-day-title">
+                ${d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' })}
+            </div>
+            ${dayTasks.map(t => `
+                <div style="font-size:0.7rem; margin-bottom:4px; cursor:pointer;" 
+                     onclick="manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url}')">
+                    • ${t.verb} ${t.object}
+                </div>
+            `).join('')}
+        `;
+        grid.appendChild(div);
+    }
+}
 
         async function addTask() {
             const verb_obj = document.getElementById('taskInput').value;
