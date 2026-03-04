@@ -96,6 +96,11 @@
         <div id="project-section">
             <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 10px;">Projecten</div>
             <div id="projectTree"></div>
+            <div id="project-section">
+                <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 10px;">Projecten</div>
+                <div id="projectTree"></div>
+                <button onclick="triggerNewProject()" style="width:100%; border:1px dashed #ccc; background:none; padding:8px; border-radius:8px; cursor:pointer; margin-top:4px;">+ Nieuw Project</button>
+            </div>
         </div>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: auto;">
           "Kom tot Mij, allen die vermoeid en belast zijn, en Ik zal jullie rust geven."
@@ -174,25 +179,36 @@
         }
 
         async function manageTask(id, currentVerb, currentObject, currentUrl) {
-            const action = prompt(`Taak: "${currentVerb} ${currentObject}"\n1: Tekst aanpassen | 2: Morgen | 3: Datum kiezen | 4: Terug naar Inbox`, "1");
-            if (action === "1") {
-                const t = prompt("Nieuwe tekst:", `${currentVerb} ${currentObject}`);
-                if (t) { const p = t.split(' '); await supabaseClient.from('inbox_items').update({ verb: p[0], object: p.slice(1).join(' ') }).eq('id', id); }
-            } else if (action === "2") {
-                const m = new Date(); m.setDate(m.getDate() + 1);
-                await supabaseClient.from('inbox_items').update({ planned_for: formatDateLocalISO(m), status: 'planned' }).eq('id', id);
-            } else if (action === "3") {
-                const d = parseHumanDate(prompt("Nieuwe datum:"));
-                if (d) await supabaseClient.from('inbox_items').update({ planned_for: formatDateLocalISO(d), status: 'planned' }).eq('id', id);
-            } else if (action === "4") {
-                await supabaseClient.from('inbox_items').update({ status: 'inbox', planned_for: null }).eq('id', id);
-            }
-            refreshAll();
+    const action = prompt(`Taak: "${currentVerb} ${currentObject}"\n1: Tekst aanpassen | 2: Morgen | 3: Datum kiezen | 4: Terug naar Inbox | 5: Koppel aan doel | 6: Koppel aan project`, "1");
+    if (action === "1") {
+        const t = prompt("Nieuwe tekst:", `${currentVerb} ${currentObject}`);
+        if (t) { const p = t.split(' '); await supabaseClient.from('tasks').update({ verb: p[0], object: p.slice(1).join(' ') }).eq('id', id); }
+    } else if (action === "2") {
+        const m = new Date(); m.setDate(m.getDate() + 1);
+        await supabaseClient.from('tasks').update({ planned_for: formatDateLocalISO(m), status: 'planned' }).eq('id', id);
+    } else if (action === "3") {
+        const d = parseHumanDate(prompt("Nieuwe datum:"));
+        if (d) await supabaseClient.from('tasks').update({ planned_for: formatDateLocalISO(d), status: 'planned' }).eq('id', id);
+    } else if (action === "4") {
+        await supabaseClient.from('tasks').update({ status: 'inbox', planned_for: null }).eq('id', id);
+    } else if (action === "5") {
+        const { data: goals } = await supabaseClient.from('goals').select('*');
+        const opties = (goals || []).map((g, i) => `${i+1}: ${g.title}`).join('\n');
+        const keuze = parseInt(prompt("Koppel aan:\n" + opties)) - 1;
+        if (goals[keuze]) await supabaseClient.from('tasks').update({ goal_id: goals[keuze].id }).eq('id', id);
+    } else if (action === "6") {
+        const { data: projects } = await supabaseClient.from('projects').select('*').order('name');
+        const opties = (projects || []).map((p, i) => `${i+1}: ${p.name}`).join('\n');
+        const keuze = parseInt(prompt("Koppel aan project:\n" + opties)) - 1;
+        if (projects[keuze]) await supabaseClient.from('tasks').update({ project_id: projects[keuze].id }).eq('id', id);
+    }
+    refreshAll();
         }
+        
 
         async function loadTodayTasks() {
             const today = formatDateLocalISO(new Date());
-            const { data } = await supabaseClient.from('inbox_items').select('*').lte('planned_for', today).neq('status', 'done');
+            const { data } = await supabaseClient.from('tasks').select('*').lte('planned_for', today).neq('status', 'done');
             document.getElementById('today-list').innerHTML = (data || []).map(t => `
                 <li>
                     <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', '${t.source_url}')">
@@ -205,7 +221,7 @@
         }
 
         async function loadInbox() {
-            let q = supabaseClient.from('inbox_items').select('*').eq('status', 'inbox');
+            let q = supabaseClient.from('tasks').select('*').eq('status', 'inbox');
             if (activeRoles.length) q = q.in('role', activeRoles);
             const { data } = await q;
             document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
@@ -231,7 +247,7 @@
 
     // ÉÉN call voor de hele week
     const { data } = await supabaseClient
-        .from('inbox_items')
+        .from('tasks')
         .select('*')
         .gte('planned_for', formatDateLocalISO(startOfWeek))
         .lte('planned_for', formatDateLocalISO(endOfWeek))
@@ -276,7 +292,7 @@
             const url = document.getElementById('linkInput').value;
             if (!verb_obj) return;
             const p = verb_obj.split(' ');
-            await supabaseClient.from('inbox_items').insert({
+            await supabaseClient.from('tasks').insert({
                 verb: p[0], object: p.slice(1).join(' '), role: role,
                 status: date ? 'planned' : 'inbox', planned_for: date ? formatDateLocalISO(date) : null,
                 source_url: url || null
@@ -286,19 +302,192 @@
         }
 
         async function loadGoals(role) {
-            const section = document.getElementById('goals-section');
-            if (!role) { section.style.display = 'none'; return; }
-            section.style.display = 'block';
-            const { data } = await supabaseClient.from('goals').select('*').eq('role', role).eq('quarter', 1);
-            document.getElementById('goals-list').innerHTML = (data || []).map(g => `<div class="goal-item" onclick="editGoal('${g.id}','${g.title}','${g.refinement || ''}')"><strong>${g.title}</strong><br><small>${g.refinement || '+ focus'}</small></div>`).join('');
-        }
+    const section = document.getElementById('goals-section');
+    if (!role) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    const { data } = await supabaseClient.from('goals').select('*').eq('role', role).eq('quarter', 1);
+    document.getElementById('goals-list').innerHTML = (data || []).map(g => `
+        <div class="goal-item" id="goal-${g.id}" onclick="toggleGoalTasks('${g.id}', '${g.title}')">
+            <strong>${g.title}</strong>
+            <small style="display:block; color: var(--text-muted)">${g.refinement || '+ focus'}</small>
+            <div id="goal-tasks-${g.id}" style="display:none; margin-top:8px;"></div>
+        </div>
+    `).join('');
+}
+async function toggleGoalTasks(goalId, goalTitle) {
+    const container = document.getElementById(`goal-tasks-${goalId}`);
+    if (container.style.display === 'block') { container.style.display = 'none'; return; }
+    container.style.display = 'block';
 
-        async function loadSidebarProjects() {
-            const { data } = await supabaseClient.from('projects').select('*');
-            document.getElementById('projectTree').innerHTML = (data || []).filter(p => !activeRoles.length || activeRoles.includes(p.role)).map(p => `<div class="goal-item" style="border-left-color:#ccc">#${p.name}</div>`).join('');
-        }
+    const { data } = await supabaseClient
+        .from('tasks')
+        .select('*')
+        .eq('goal_id', goalId)
+        .neq('status', 'done');
 
-        async function completeTask(id) { await supabaseClient.from('inbox_items').update({ status: 'done' }).eq('id', id); refreshAll(); }
+    container.innerHTML = `
+        ${(data || []).map(t => `
+            <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
+                 onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url || ''}')">
+                <span>• ${t.verb} ${t.object}</span>
+                <button onclick="event.stopPropagation(); completeTask('${t.id}')" 
+                        style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
+            </div>
+        `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
+        <button onclick="event.stopPropagation(); addTaskToGoal('${goalId}', '${goalTitle}')"
+                style="margin-top:8px; width:100%; border:1px dashed #ccc; background:none; padding:5px; border-radius:6px; cursor:pointer; font-size:0.75rem;">
+            + Taak toevoegen
+        </button>
+    `;
+}
+async function addTaskToGoal(goalId, goalTitle) {
+    const input = prompt(`Nieuwe taak voor "${goalTitle}":`);
+    if (!input) return;
+    const parts = input.split(' ');
+    const date = parseHumanDate(prompt("Wanneer? (ma, morgen, vandaag — of leeg voor inbox)"));
+    await supabaseClient.from('tasks').insert({
+        verb: parts[0],
+        object: parts.slice(1).join(' '),
+        role: activeRoles[0],
+        goal_id: goalId,
+        status: date ? 'planned' : 'inbox',
+        planned_for: date ? formatDateLocalISO(date) : null
+    });
+    toggleGoalTasks(goalId, goalTitle);
+    refreshAll();
+}
+
+async function loadSidebarProjects() {
+    const { data: projects } = await supabaseClient
+        .from('projects')
+        .select('*')
+        .order('name');
+
+    const filtered = (projects || []).filter(p =>
+        !activeRoles.length || activeRoles.includes(p.role)
+    );
+
+    // Groepeer: projecten onder een doel, en losse projecten
+    const underGoal = filtered.filter(p => p.goal_id);
+    const standalone = filtered.filter(p => !p.goal_id);
+
+    document.getElementById('projectTree').innerHTML = `
+        ${standalone.map(p => renderProjectTile(p)).join('')}
+    `;
+
+    // Plak projecten die onder een doel hangen, in het goal-blokje
+    underGoal.forEach(p => {
+        const goalContainer = document.getElementById(`goal-tasks-${p.goal_id}`);
+        if (goalContainer && goalContainer.style.display === 'block') {
+            const existing = document.getElementById(`project-tile-${p.id}`);
+            if (!existing) {
+                goalContainer.insertAdjacentHTML('beforeend', renderProjectTile(p, true));
+            }
+        }
+    });
+}
+async function triggerNewProject() {
+    const name = prompt("Naam van het nieuwe project:");
+    if (!name) return;
+
+    // Focusgebied: actief of zelf kiezen
+    let role = activeRoles[0];
+    if (!role) {
+        const keuze = prompt("Focusgebied:\n1: Werk\n2: Thuis\n3: Gezondheid\n4: Sociaal");
+        const rollen = { '1': 'Werk', '2': 'Thuis', '3': 'Gezondheid', '4': 'CommunitySocial' };
+        role = rollen[keuze] || null;
+    }
+
+    // Optioneel koppelen aan ontwikkeldoel
+    let goal_id = null;
+    if (role) {
+        const { data: goals } = await supabaseClient.from('goals').select('*').eq('role', role);
+        if (goals && goals.length > 0) {
+            const opties = goals.map((g, i) => `${i+1}: ${g.title}`).join('\n');
+            const keuze = prompt(`Koppelen aan ontwikkeldoel? (leeg = geen)\n${opties}`);
+            if (keuze) {
+                const idx = parseInt(keuze) - 1;
+                if (goals[idx]) goal_id = goals[idx].id;
+            }
+        }
+    }
+
+    const { error } = await supabaseClient.from('projects').insert({
+        name,
+        role: role || null,
+        goal_id: goal_id || null
+    });
+
+    if (error) { console.error('project insert error:', error); return; }
+    loadSidebarProjects();
+}
+function renderProjectTile(p, compact = false) {
+    return `
+        <div id="project-tile-${p.id}"
+             class="goal-item"
+             style="border-left-color: #a8c7fa; cursor:pointer; ${compact ? 'margin-left:8px;' : ''}"
+             onclick="toggleProjectTasks('${p.id}', '${p.name}', '${p.role || ''}')">
+            <strong>${roleIcon(p.role)} ${p.name}</strong>
+            <div id="project-tasks-${p.id}" style="display:none; margin-top:8px;"></div>
+        </div>
+    `;
+}
+async function toggleProjectTasks(projectId, projectName, role) {
+    const container = document.getElementById(`project-tasks-${projectId}`);
+    if (container.style.display === 'block') { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+
+    const { data } = await supabaseClient
+        .from('tasks')
+        .select('*')
+        .eq('project_id', projectId)
+        .neq('status', 'done');
+
+    container.innerHTML = `
+        ${(data || []).map(t => `
+            <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
+                 onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url || ''}')">
+                <span>• ${t.verb} ${t.object}</span>
+                <button onclick="event.stopPropagation(); completeTask('${t.id}')"
+                        style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
+            </div>
+        `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
+        <button onclick="event.stopPropagation(); addTaskToProject('${projectId}', '${projectName}', '${role}')"
+                style="margin-top:8px; width:100%; border:1px dashed #ccc; background:none; padding:5px; border-radius:6px; cursor:pointer; font-size:0.75rem;">
+            + Taak toevoegen
+        </button>
+    `;
+}
+function roleIcon(role) {
+    const icons = {
+        'Werk': '💼',
+        'Thuis': '🏠',
+        'Gezondheid': '🥗',
+        'CommunitySocial': '🌱'
+    };
+    return icons[role] || '📁';
+}
+async function addTaskToProject(projectId, projectName, role) {
+    const input = prompt(`Nieuwe taak voor "#${projectName}":`);
+    if (!input) return;
+    const parts = input.split(' ');
+    const date = parseHumanDate(prompt("Wanneer? (ma, morgen, vandaag — of leeg voor inbox)"));
+
+    const { error } = await supabaseClient.from('tasks').insert({
+        verb: parts[0],
+        object: parts.slice(1).join(' '),
+        role: role || activeRoles[0] || null,
+        project_id: projectId,
+        status: date ? 'planned' : 'inbox',
+        planned_for: date ? formatDateLocalISO(date) : null
+    });
+
+    if (error) { console.error('insert error:', error); return; }
+    toggleProjectTasks(projectId, projectName, role);
+    refreshAll();
+}
+
+        async function completeTask(id) { await supabaseClient.from('tasks').update({ status: 'done' }).eq('id', id); refreshAll(); }
         function refreshAll() { loadTodayTasks(); loadInbox(); loadWeekTasks(); loadSidebarProjects(); }
         function triggerNewGoal() {
             const r = activeRoles[0]; if (!r) return alert("Selecteer eerst een thema");
