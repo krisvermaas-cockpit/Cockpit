@@ -6,232 +6,320 @@
     <title>Cockpit - Rust & Focus</title>
     <style>
         :root {
-    --gemini-bg: #f0f4f9;
-    --gemini-card: #ffffff;
-    --gemini-accent: #1a73e8;
-    --text-main: #1f1f1f;
-    --text-muted: #5f6368;
-    --sidebar-width: 260px;
-    --danger: #d93025;
-}
+            --gemini-bg: #f0f4f9;
+            --gemini-card: #ffffff;
+            --gemini-accent: #1a73e8;
+            --text-main: #1f1f1f;
+            --text-muted: #5f6368;
+            --sidebar-width: 260px;
+            --danger: #d93025;
+        }
 
-body {
-    font-family: 'Google Sans', 'SF Pro Text', sans-serif;
-    margin: 0; background-color: var(--gemini-bg); color: var(--text-main);
-    display: flex; height: 100vh; overflow: hidden;
-}
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
 
-/* Sidebar */
-.sidebar {
-    width: var(--sidebar-width);
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid rgba(0,0,0,0.05);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    transition: transform 0.3s ease;
-    z-index: 1000;
-    overflow-y: auto;
-}
+        body {
+            font-family: 'Google Sans', 'SF Pro Text', sans-serif;
+            margin: 0;
+            background-color: var(--gemini-bg);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-@media (max-width: 768px) {
-    .sidebar {
-        position: fixed;
-        left: 0; top: 0; bottom: 0;
-        transform: translateX(-100%);
-        width: 85vw;
-        max-width: 320px;
-    }
-    .sidebar.active { transform: translateX(0); }
-}
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0,0,0,0.05);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
 
-/* Sidebar overlay */
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.3);
-    z-index: 999;
-}
-.sidebar-overlay.active { display: block; }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0; top: 0; bottom: 0;
+                transform: translateX(-100%);
+                width: 85vw;
+                max-width: 320px;
+            }
+            .sidebar.active { transform: translateX(0); }
+        }
 
-.mobile-toggle {
-    display: none;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 4px;
-}
-@media (max-width: 768px) { .mobile-toggle { display: block; } }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 999;
+        }
+        .sidebar-overlay.active { display: block; }
 
-.role-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-.role-tile {
-    background: var(--gemini-card);
-    border: 1px solid #e3e3e3;
-    border-radius: 16px;
-    padding: 12px;
-    text-align: center;
-    cursor: pointer;
-    font-size: 0.85rem;
-}
-.role-tile.active {
-    background: #d3e3fd;
-    border-color: var(--gemini-accent);
-    font-weight: 500;
-}
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+        @media (max-width: 768px) { .mobile-toggle { display: block; } }
 
-/* Main content */
-.main-content {
-    flex: 1;
-    padding: 24px 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+        .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .role-tile {
+            background: var(--gemini-card);
+            border: 1px solid #e3e3e3;
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .role-tile.active {
+            background: #d3e3fd;
+            border-color: var(--gemini-accent);
+            font-weight: 500;
+        }
 
-@media (max-width: 768px) {
-    .main-content { padding: 16px 12px; }
-}
+        /* Main content */
+        .main-content {
+            flex: 1;
+            padding: 24px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 0;
+            box-sizing: border-box;
+        }
 
-.prompt-box {
-    background: var(--gemini-card);
-    border-radius: 28px;
-    padding: 16px 20px;
-    box-shadow: 0 1px 6px rgba(32,33,36,0.1);
-    width: 100%;
-    max-width: 800px;
-    margin-bottom: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+        @media (max-width: 768px) {
+            .main-content { padding: 16px 12px; }
+        }
 
-/* Dashboard grid */
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    width: 100%;
-    max-width: 800px;
-}
+        .prompt-box {
+            background: var(--gemini-card);
+            border-radius: 28px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 6px rgba(32,33,36,0.1);
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+            min-width: 0;
+        }
 
-@media (max-width: 768px) {
-    .dashboard-grid { grid-template-columns: 1fr; }
-}
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            width: 100%;
+            max-width: 800px;
+        }
 
-.glass-card {
-    background: var(--gemini-card);
-    border-radius: 24px;
-    padding: 20px;
-    border: 1px solid #e3e3e3;
-}
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
 
-/* Week grid */
-.week-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    width: 100%;
-    max-width: 800px;
-    margin-top: 24px;
-    padding-bottom: 40px;
-}
+        .glass-card {
+            background: var(--gemini-card);
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid #e3e3e3;
+        }
 
-@media (max-width: 768px) {
-    .week-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 24px;
+            padding-bottom: 40px;
+        }
 
-@media (max-width: 480px) {
-    .week-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
+        @media (max-width: 768px) {
+            .week-grid { grid-template-columns: repeat(3, 1fr); }
+        }
 
-.week-day {
-    background: white;
-    border-radius: 12px;
-    padding: 10px;
-    min-height: 80px;
-    border: 1px solid #e3e3e3;
-    font-size: 0.75rem;
-}
-.week-day.today {
-    border-color: var(--gemini-accent);
-    background: #f8faff;
-}
-.week-day-title {
-    font-weight: 600;
-    margin-bottom: 6px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 4px;
-}
+        @media (max-width: 480px) {
+            .week-grid { grid-template-columns: repeat(2, 1fr); }
+        }
 
-.overdue { color: var(--danger); font-weight: bold; font-size: 0.7rem; margin-right: 5px; }
-ul { list-style: none; padding: 0; margin: 0; }
-li { padding: 10px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
+        .week-day {
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            min-height: 80px;
+            border: 1px solid #e3e3e3;
+            font-size: 0.75rem;
+        }
+        .week-day.today {
+            border-color: var(--gemini-accent);
+            background: #f8faff;
+        }
+        .week-day-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+        }
 
-.complete-btn {
-    background: white;
-    border: 1px solid #dadce0;
-    color: var(--gemini-accent);
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.goal-item {
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    border-left: 4px solid var(--gemini-accent);
-    cursor: pointer;
-}
-.mail-btn {
-    text-decoration: none;
-    font-size: 1.1rem;
-    margin-left: 10px;
-    vertical-align: middle;
-}
-html, body {
-    overflow-x: hidden;
-    max-width: 100%;
-}
+        .overdue { color: var(--danger); font-weight: bold; font-size: 0.7rem; margin-right: 5px; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { padding: 10px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
 
-.main-content {
-    min-width: 0;
-    box-sizing: border-box;
-}
+        .complete-btn {
+            background: white;
+            border: 1px solid #dadce0;
+            color: var(--gemini-accent);
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .goal-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--gemini-accent);
+            cursor: pointer;
+        }
+        .mail-btn {
+            text-decoration: none;
+            font-size: 1.1rem;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
 
-.prompt-box {
-    box-sizing: border-box;
-    min-width: 0;
-}
+        input {
+            min-width: 0;
+            box-sizing: border-box;
+        }
 
-input {
-    min-width: 0;
-    box-sizing: border-box;
-}
+        /* ── Bottom Sheet ── */
+        .sheet-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 2000;
+        }
+        .sheet-overlay.active { display: block; }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: white;
+            border-radius: 24px 24px 0 0;
+            padding: 24px 20px 36px;
+            z-index: 2001;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .bottom-sheet.active { transform: translateY(0); }
+
+        .sheet-handle {
+            width: 40px; height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .sheet-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .sheet-input {
+            width: 100%;
+            border: 1px solid #e3e3e3;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        .sheet-input:focus { outline: none; border-color: var(--gemini-accent); }
+
+        .sheet-btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .sheet-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 8px;
+            border-radius: 12px;
+            border: 1px solid #e3e3e3;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .sheet-btn:hover { background: #e8f0fe; border-color: var(--gemini-accent); }
+        .sheet-btn.primary {
+            background: var(--gemini-accent);
+            color: white;
+            border-color: var(--gemini-accent);
+        }
+        .sheet-btn.danger {
+            background: #fce8e6;
+            color: var(--danger);
+            border-color: #f5c6c2;
+        }
+
+        .sheet-section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 16px 0 8px;
+        }
+
+        .sheet-select {
+            width: 100%;
+            border: 1px solid #e3e3e3;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            background: white;
+        }
+        .sheet-select:focus { outline: none; border-color: var(--gemini-accent); }
     </style>
 </head>
 <body>
+
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleMenu()"></div>
+
     <nav class="sidebar" id="sidebar">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="font-size: 1.5rem; font-weight: 600; color: var(--gemini-accent);">Cockpit</div>
             <button class="mobile-toggle" onclick="toggleMenu()">✕</button>
         </div>
-        
+
         <div class="role-grid">
             <div class="role-tile" data-role="Gezondheid">🥗<br>Health</div>
             <div class="role-tile" data-role="Werk">💼<br>Werk</div>
@@ -248,15 +336,12 @@ input {
         <div id="project-section">
             <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 10px;">Projecten</div>
             <div id="projectTree"></div>
-            <div id="project-section">
-                <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 10px;">Projecten</div>
-                <div id="projectTree"></div>
-                <button onclick="triggerNewProject()" style="width:100%; border:1px dashed #ccc; background:none; padding:8px; border-radius:8px; cursor:pointer; margin-top:4px;">+ Nieuw Project</button>
-            </div>
+            <button onclick="triggerNewProject()" style="width:100%; border:1px dashed #ccc; background:none; padding:8px; border-radius:8px; cursor:pointer; margin-top:4px;">+ Nieuw Project</button>
         </div>
+
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: auto;">
-          "Kom tot Mij, allen die vermoeid en belast zijn, en Ik zal jullie rust geven."
-      </div>
+            "Kom tot Mij, allen die vermoeid en belast zijn, en Ik zal jullie rust geven."
+        </div>
     </nav>
 
     <main class="main-content">
@@ -268,7 +353,7 @@ input {
 
         <div class="prompt-box">
             <div style="display:flex; align-items:center; gap:10px;">
-                <input id="taskInput" placeholder="Wat ga je doen? (bv: Mailen naar #Elsbeth)" style="flex:1; border:none; outline:none; font-size:1.1rem;">
+                <input id="taskInput" placeholder="Wat ga je doen?" style="flex:1; border:none; outline:none; font-size:1.1rem;" onkeydown="if(event.key==='Enter') addTask()">
                 <button onclick="addTask()" style="background:var(--gemini-accent); color:white; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer;">➔</button>
             </div>
             <div style="display:flex; gap:8px; border-top:1px solid #eee; padding-top:10px; flex-wrap: wrap;">
@@ -298,6 +383,13 @@ input {
         <div id="week-grid" class="week-grid"></div>
     </main>
 
+    <!-- Bottom Sheet -->
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <div class="bottom-sheet" id="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div id="sheet-content"></div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script>
         const supabaseClient = supabase.createClient(
@@ -306,11 +398,242 @@ input {
         );
 
         let activeRoles = [];
+        let sheetTaskId = null;
 
+        // ── Menu ──
         function toggleMenu() {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('sidebar-overlay').classList.toggle('active');
-}
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        // ── Bottom Sheet ──
+        function openSheet(html) {
+            document.getElementById('sheet-content').innerHTML = html;
+            document.getElementById('bottom-sheet').classList.add('active');
+            document.getElementById('sheet-overlay').classList.add('active');
+        }
+
+        function closeSheet() {
+            document.getElementById('bottom-sheet').classList.remove('active');
+            document.getElementById('sheet-overlay').classList.remove('active');
+            sheetTaskId = null;
+        }
+
+        // ── Taak beheren via bottom sheet ──
+        async function manageTask(id, currentVerb, currentObject, currentUrl) {
+            sheetTaskId = id;
+
+            const [{ data: goals }, { data: projects }] = await Promise.all([
+                supabaseClient.from('goals').select('*').order('title'),
+                supabaseClient.from('projects').select('*').order('name')
+            ]);
+
+            const goalsOptions = (goals || []).map(g => `<option value="${g.id}">${g.title}</option>`).join('');
+            const projectsOptions = (projects || []).map(p => `<option value="${p.id}">${roleIcon(p.role)} ${p.name}</option>`).join('');
+
+            openSheet(`
+                <div class="sheet-title">✏️ ${currentVerb} ${currentObject}</div>
+
+                <div class="sheet-section-label">Tekst aanpassen</div>
+                <input class="sheet-input" id="sheet-verb" value="${currentVerb}" placeholder="Werkwoord">
+                <input class="sheet-input" id="sheet-object" value="${currentObject}" placeholder="Omschrijving">
+
+                <div class="sheet-section-label">Plannen</div>
+                <div class="sheet-btn-row">
+                    <button class="sheet-btn" onclick="sheetPlanToday()">📅 Vandaag</button>
+                    <button class="sheet-btn" onclick="sheetPlanTomorrow()">➡️ Morgen</button>
+                    <button class="sheet-btn" onclick="sheetPlanInbox()">📥 Inbox</button>
+                </div>
+
+                <div class="sheet-section-label">Specifieke datum</div>
+                <input class="sheet-input" type="date" id="sheet-date" style="margin-bottom:12px;">
+
+                <div class="sheet-section-label">Koppelen</div>
+                <select class="sheet-select" id="sheet-goal-select">
+                    <option value="">— Koppel aan doel —</option>
+                    ${goalsOptions}
+                </select>
+                <select class="sheet-select" id="sheet-project-select">
+                    <option value="">— Koppel aan project —</option>
+                    ${projectsOptions}
+                </select>
+
+                <div class="sheet-btn-row" style="margin-top:8px;">
+                    <button class="sheet-btn primary" onclick="sheetSave()">Opslaan</button>
+                    <button class="sheet-btn danger" onclick="sheetDelete()">Verwijderen</button>
+                </div>
+            `);
+        }
+
+        async function sheetSave() {
+            const verb = document.getElementById('sheet-verb').value.trim();
+            const obj = document.getElementById('sheet-object').value.trim();
+            const dateVal = document.getElementById('sheet-date').value;
+            const goalId = document.getElementById('sheet-goal-select').value;
+            const projectId = document.getElementById('sheet-project-select').value;
+
+            const updates = {};
+            if (verb) updates.verb = verb;
+            if (obj !== undefined) updates.object = obj;
+            if (dateVal) { updates.planned_for = dateVal; updates.status = 'planned'; }
+            if (goalId) updates.goal_id = goalId;
+            if (projectId) updates.project_id = projectId;
+
+            await supabaseClient.from('tasks').update(updates).eq('id', sheetTaskId);
+            closeSheet();
+            refreshAll();
+        }
+
+        async function sheetPlanToday() {
+            const today = formatDateLocalISO(new Date());
+            await supabaseClient.from('tasks').update({ planned_for: today, status: 'planned' }).eq('id', sheetTaskId);
+            closeSheet(); refreshAll();
+        }
+
+        async function sheetPlanTomorrow() {
+            const m = new Date(); m.setDate(m.getDate() + 1);
+            await supabaseClient.from('tasks').update({ planned_for: formatDateLocalISO(m), status: 'planned' }).eq('id', sheetTaskId);
+            closeSheet(); refreshAll();
+        }
+
+        async function sheetPlanInbox() {
+            await supabaseClient.from('tasks').update({ planned_for: null, status: 'inbox' }).eq('id', sheetTaskId);
+            closeSheet(); refreshAll();
+        }
+
+        async function sheetDelete() {
+            if (!confirm('Taak verwijderen?')) return;
+            await supabaseClient.from('tasks').delete().eq('id', sheetTaskId);
+            closeSheet(); refreshAll();
+        }
+
+        // ── Nieuwe taak vanuit doel (bottom sheet) ──
+        function addTaskToGoal(goalId, goalTitle) {
+            openSheet(`
+                <div class="sheet-title">+ Taak voor "${goalTitle}"</div>
+                <input class="sheet-input" id="new-task-text" placeholder="Wat ga je doen?" autofocus>
+                <div class="sheet-section-label">Plannen</div>
+                <div class="sheet-btn-row">
+                    <button class="sheet-btn" onclick="newGoalTaskPlan('vandaag','${goalId}','${goalTitle}')">📅 Vandaag</button>
+                    <button class="sheet-btn" onclick="newGoalTaskPlan('morgen','${goalId}','${goalTitle}')">➡️ Morgen</button>
+                    <button class="sheet-btn" onclick="newGoalTaskPlan('inbox','${goalId}','${goalTitle}')">📥 Inbox</button>
+                </div>
+                <input class="sheet-input" type="date" id="new-task-date">
+                <button class="sheet-btn primary" style="width:100%; margin-top:4px;" onclick="newGoalTaskSave('${goalId}','${goalTitle}')">Toevoegen</button>
+            `);
+        }
+
+        async function newGoalTaskPlan(when, goalId, goalTitle) {
+            const text = document.getElementById('new-task-text').value.trim();
+            if (!text) return;
+            const parts = text.split(' ');
+            let date = null;
+            if (when === 'vandaag') date = formatDateLocalISO(new Date());
+            if (when === 'morgen') { const m = new Date(); m.setDate(m.getDate()+1); date = formatDateLocalISO(m); }
+            await supabaseClient.from('tasks').insert({
+                verb: parts[0], object: parts.slice(1).join(' '),
+                role: activeRoles[0] || null, goal_id: goalId,
+                status: date ? 'planned' : 'inbox', planned_for: date
+            });
+            closeSheet(); toggleGoalTasks(goalId, goalTitle); refreshAll();
+        }
+
+        async function newGoalTaskSave(goalId, goalTitle) {
+            const text = document.getElementById('new-task-text').value.trim();
+            const dateVal = document.getElementById('new-task-date').value;
+            if (!text) return;
+            const parts = text.split(' ');
+            await supabaseClient.from('tasks').insert({
+                verb: parts[0], object: parts.slice(1).join(' '),
+                role: activeRoles[0] || null, goal_id: goalId,
+                status: dateVal ? 'planned' : 'inbox', planned_for: dateVal || null
+            });
+            closeSheet(); toggleGoalTasks(goalId, goalTitle); refreshAll();
+        }
+
+        // ── Nieuwe taak vanuit project (bottom sheet) ──
+        function addTaskToProject(projectId, projectName, role) {
+            openSheet(`
+                <div class="sheet-title">+ Taak voor #${projectName}</div>
+                <input class="sheet-input" id="new-task-text" placeholder="Wat ga je doen?" autofocus>
+                <div class="sheet-section-label">Plannen</div>
+                <div class="sheet-btn-row">
+                    <button class="sheet-btn" onclick="newProjectTaskPlan('vandaag','${projectId}','${projectName}','${role}')">📅 Vandaag</button>
+                    <button class="sheet-btn" onclick="newProjectTaskPlan('morgen','${projectId}','${projectName}','${role}')">➡️ Morgen</button>
+                    <button class="sheet-btn" onclick="newProjectTaskPlan('inbox','${projectId}','${projectName}','${role}')">📥 Inbox</button>
+                </div>
+                <input class="sheet-input" type="date" id="new-task-date">
+                <button class="sheet-btn primary" style="width:100%; margin-top:4px;" onclick="newProjectTaskSave('${projectId}','${projectName}','${role}')">Toevoegen</button>
+            `);
+        }
+
+        async function newProjectTaskPlan(when, projectId, projectName, role) {
+            const text = document.getElementById('new-task-text').value.trim();
+            if (!text) return;
+            const parts = text.split(' ');
+            let date = null;
+            if (when === 'vandaag') date = formatDateLocalISO(new Date());
+            if (when === 'morgen') { const m = new Date(); m.setDate(m.getDate()+1); date = formatDateLocalISO(m); }
+            await supabaseClient.from('tasks').insert({
+                verb: parts[0], object: parts.slice(1).join(' '),
+                role: role || activeRoles[0] || null, project_id: projectId,
+                status: date ? 'planned' : 'inbox', planned_for: date
+            });
+            closeSheet(); toggleProjectTasks(projectId, projectName, role); refreshAll();
+        }
+
+        async function newProjectTaskSave(projectId, projectName, role) {
+            const text = document.getElementById('new-task-text').value.trim();
+            const dateVal = document.getElementById('new-task-date').value;
+            if (!text) return;
+            const parts = text.split(' ');
+            await supabaseClient.from('tasks').insert({
+                verb: parts[0], object: parts.slice(1).join(' '),
+                role: role || activeRoles[0] || null, project_id: projectId,
+                status: dateVal ? 'planned' : 'inbox', planned_for: dateVal || null
+            });
+            closeSheet(); toggleProjectTasks(projectId, projectName, role); refreshAll();
+        }
+
+        // ── Nieuw project (bottom sheet) ──
+        async function triggerNewProject() {
+            const { data: goals } = await supabaseClient.from('goals').select('*').order('title');
+            const goalsOptions = (goals || []).map(g => `<option value="${g.id}">${g.title}</option>`).join('');
+            openSheet(`
+                <div class="sheet-title">+ Nieuw Project</div>
+                <input class="sheet-input" id="new-project-name" placeholder="Naam van het project" autofocus>
+                <div class="sheet-section-label">Focusgebied</div>
+                <select class="sheet-select" id="new-project-role">
+                    <option value="Werk">💼 Werk</option>
+                    <option value="Thuis">🏠 Thuis</option>
+                    <option value="Gezondheid">🥗 Gezondheid</option>
+                    <option value="CommunitySocial">🌱 Sociaal</option>
+                </select>
+                <div class="sheet-section-label">Koppel aan ontwikkeldoel (optioneel)</div>
+                <select class="sheet-select" id="new-project-goal">
+                    <option value="">— Geen doel —</option>
+                    ${goalsOptions}
+                </select>
+                <button class="sheet-btn primary" style="width:100%; margin-top:8px;" onclick="saveNewProject()">Project aanmaken</button>
+            `);
+            if (activeRoles[0]) {
+                document.getElementById('new-project-role').value = activeRoles[0];
+            }
+        }
+
+        async function saveNewProject() {
+            const name = document.getElementById('new-project-name').value.trim();
+            const role = document.getElementById('new-project-role').value;
+            const goalId = document.getElementById('new-project-goal').value;
+            if (!name) return;
+            const { error } = await supabaseClient.from('projects').insert({
+                name, role, goal_id: goalId || null
+            });
+            if (error) { console.error(error); return; }
+            closeSheet(); loadSidebarProjects();
+        }
+
+        // ── Hulpfuncties ──
         function formatDateLocalISO(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -322,7 +645,7 @@ input {
             if (!text) return null;
             const val = text.toLowerCase().trim();
             const d = new Date(); d.setHours(0,0,0,0);
-            if (val === 'morgen') d.setDate(d.getDate() + 1);
+            if (val === 'morgen') { d.setDate(d.getDate() + 1); return d; }
             if (val === 'vandaag') return d;
             const days = {ma:1,maandag:1,di:2,dinsdag:2,wo:3,woensdag:3,do:4,donderdag:4,vr:5,vrijdag:5,za:6,zaterdag:6,zo:0,zondag:0};
             if (days[val] !== undefined) {
@@ -333,46 +656,24 @@ input {
             return d;
         }
 
-        async function manageTask(id, currentVerb, currentObject, currentUrl) {
-    const action = prompt(`Taak: "${currentVerb} ${currentObject}"\n1: Tekst aanpassen | 2: Morgen | 3: Datum kiezen | 4: Terug naar Inbox | 5: Koppel aan doel | 6: Koppel aan project`, "1");
-    if (action === "1") {
-        const t = prompt("Nieuwe tekst:", `${currentVerb} ${currentObject}`);
-        if (t) { const p = t.split(' '); await supabaseClient.from('tasks').update({ verb: p[0], object: p.slice(1).join(' ') }).eq('id', id); }
-    } else if (action === "2") {
-        const m = new Date(); m.setDate(m.getDate() + 1);
-        await supabaseClient.from('tasks').update({ planned_for: formatDateLocalISO(m), status: 'planned' }).eq('id', id);
-    } else if (action === "3") {
-        const d = parseHumanDate(prompt("Nieuwe datum:"));
-        if (d) await supabaseClient.from('tasks').update({ planned_for: formatDateLocalISO(d), status: 'planned' }).eq('id', id);
-    } else if (action === "4") {
-        await supabaseClient.from('tasks').update({ status: 'inbox', planned_for: null }).eq('id', id);
-    } else if (action === "5") {
-        const { data: goals } = await supabaseClient.from('goals').select('*');
-        const opties = (goals || []).map((g, i) => `${i+1}: ${g.title}`).join('\n');
-        const keuze = parseInt(prompt("Koppel aan:\n" + opties)) - 1;
-        if (goals[keuze]) await supabaseClient.from('tasks').update({ goal_id: goals[keuze].id }).eq('id', id);
-    } else if (action === "6") {
-        const { data: projects } = await supabaseClient.from('projects').select('*').order('name');
-        const opties = (projects || []).map((p, i) => `${i+1}: ${p.name}`).join('\n');
-        const keuze = parseInt(prompt("Koppel aan project:\n" + opties)) - 1;
-        if (projects[keuze]) await supabaseClient.from('tasks').update({ project_id: projects[keuze].id }).eq('id', id);
-    }
-    refreshAll();
+        function roleIcon(role) {
+            const icons = { 'Werk': '💼', 'Thuis': '🏠', 'Gezondheid': '🥗', 'CommunitySocial': '🌱' };
+            return icons[role] || '📁';
         }
-        
 
+        // ── Data laden ──
         async function loadTodayTasks() {
             const today = formatDateLocalISO(new Date());
             const { data } = await supabaseClient.from('tasks').select('*').lte('planned_for', today).neq('status', 'done');
             document.getElementById('today-list').innerHTML = (data || []).map(t => `
                 <li>
-                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', '${t.source_url}')">
+                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
                         ${t.planned_for < today ? '<span class="overdue">OVER TIJD</span>' : ''}
-                        <strong>${t.verb}</strong> ${t.object}
+                        <strong>${t.verb}</strong> ${t.object || ''}
                         ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
                     </div>
                     <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
-                </li>`).join('') || 'Klaar voor vandaag!';
+                </li>`).join('') || '<li style="color:var(--text-muted); font-size:0.9rem;">Klaar voor vandaag! 🎉</li>';
         }
 
         async function loadInbox() {
@@ -381,284 +682,179 @@ input {
             const { data } = await q;
             document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
                 <li>
-                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}', '${t.verb}', '${t.object}', '${t.source_url}')">
-                        <strong>${t.verb}</strong> ${t.object}
+                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                        <strong>${t.verb}</strong> ${t.object || ''}
                         ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
                     </div>
                     <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
-                </li>`).join('');
+                </li>`).join('') || '<li style="color:var(--text-muted); font-size:0.9rem;">Inbox leeg ✨</li>';
         }
 
         async function loadWeekTasks() {
-    const grid = document.getElementById('week-grid');
-    grid.innerHTML = '';
+            const grid = document.getElementById('week-grid');
+            grid.innerHTML = '';
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+            const { data } = await supabaseClient.from('tasks').select('*')
+                .gte('planned_for', formatDateLocalISO(startOfWeek))
+                .lte('planned_for', formatDateLocalISO(endOfWeek))
+                .neq('status', 'done');
 
-    // ÉÉN call voor de hele week
-    const { data } = await supabaseClient
-        .from('tasks')
-        .select('*')
-        .gte('planned_for', formatDateLocalISO(startOfWeek))
-        .lte('planned_for', formatDateLocalISO(endOfWeek))
-        .neq('status', 'done');
+            const tasksByDay = {};
+            (data || []).forEach(t => {
+                if (!tasksByDay[t.planned_for]) tasksByDay[t.planned_for] = [];
+                tasksByDay[t.planned_for].push(t);
+            });
 
-    // Groepeer taken per datum in een Map
-    const tasksByDay = {};
-    (data || []).forEach(t => {
-        if (!tasksByDay[t.planned_for]) tasksByDay[t.planned_for] = [];
-        tasksByDay[t.planned_for].push(t);
-    });
-
-    // Bouw de grid
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(startOfWeek);
-        d.setDate(startOfWeek.getDate() + i);
-        const iso = formatDateLocalISO(d);
-
-        const div = document.createElement('div');
-        div.className = `week-day ${iso === formatDateLocalISO(today) ? 'today' : ''}`;
-        
-        const dayTasks = tasksByDay[iso] || [];
-        div.innerHTML = `
-            <div class="week-day-title">
-                ${d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' })}
-            </div>
-            ${dayTasks.map(t => `
-                <div style="font-size:0.7rem; margin-bottom:4px; cursor:pointer;" 
-                     onclick="manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url}')">
-                    • ${t.verb} ${t.object}
-                </div>
-            `).join('')}
-        `;
-        grid.appendChild(div);
-    }
-}
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                const iso = formatDateLocalISO(d);
+                const div = document.createElement('div');
+                div.className = `week-day ${iso === formatDateLocalISO(today) ? 'today' : ''}`;
+                const dayTasks = tasksByDay[iso] || [];
+                div.innerHTML = `
+                    <div class="week-day-title">${d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' })}</div>
+                    ${dayTasks.map(t => `
+                        <div style="font-size:0.7rem; margin-bottom:4px; cursor:pointer;"
+                             onclick="manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                            • ${t.verb} ${t.object || ''}
+                        </div>
+                    `).join('')}
+                `;
+                grid.appendChild(div);
+            }
+        }
 
         async function addTask() {
-            const verb_obj = document.getElementById('taskInput').value;
+            const verb_obj = document.getElementById('taskInput').value.trim();
             const role = document.getElementById('roleSelect').value;
             const date = parseHumanDate(document.getElementById('dateInput').value);
             const url = document.getElementById('linkInput').value;
             if (!verb_obj) return;
             const p = verb_obj.split(' ');
             await supabaseClient.from('tasks').insert({
-                verb: p[0], object: p.slice(1).join(' '), role: role,
-                status: date ? 'planned' : 'inbox', planned_for: date ? formatDateLocalISO(date) : null,
+                verb: p[0], object: p.slice(1).join(' '), role,
+                status: date ? 'planned' : 'inbox',
+                planned_for: date ? formatDateLocalISO(date) : null,
                 source_url: url || null
             });
-            document.getElementById('taskInput').value = ''; document.getElementById('dateInput').value = ''; document.getElementById('linkInput').value = '';
+            document.getElementById('taskInput').value = '';
+            document.getElementById('dateInput').value = '';
+            document.getElementById('linkInput').value = '';
             refreshAll();
         }
 
         async function loadGoals(role) {
-    const section = document.getElementById('goals-section');
-    if (!role) { section.style.display = 'none'; return; }
-    section.style.display = 'block';
-    const { data } = await supabaseClient.from('goals').select('*').eq('role', role).eq('quarter', 1);
-    document.getElementById('goals-list').innerHTML = (data || []).map(g => `
-        <div class="goal-item" id="goal-${g.id}" onclick="toggleGoalTasks('${g.id}', '${g.title}')">
-            <strong>${g.title}</strong>
-            <small style="display:block; color: var(--text-muted)">${g.refinement || '+ focus'}</small>
-            <div id="goal-tasks-${g.id}" style="display:none; margin-top:8px;"></div>
-        </div>
-    `).join('');
-}
-async function toggleGoalTasks(goalId, goalTitle) {
-    const container = document.getElementById(`goal-tasks-${goalId}`);
-    if (container.style.display === 'block') { container.style.display = 'none'; return; }
-    container.style.display = 'block';
-
-    const { data } = await supabaseClient
-        .from('tasks')
-        .select('*')
-        .eq('goal_id', goalId)
-        .neq('status', 'done');
-
-    container.innerHTML = `
-        ${(data || []).map(t => `
-            <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
-                 onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url || ''}')">
-                <span>• ${t.verb} ${t.object}</span>
-                <button onclick="event.stopPropagation(); completeTask('${t.id}')" 
-                        style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
-            </div>
-        `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
-        <button onclick="event.stopPropagation(); addTaskToGoal('${goalId}', '${goalTitle}')"
-                style="margin-top:8px; width:100%; border:1px dashed #ccc; background:none; padding:5px; border-radius:6px; cursor:pointer; font-size:0.75rem;">
-            + Taak toevoegen
-        </button>
-    `;
-}
-async function addTaskToGoal(goalId, goalTitle) {
-    const input = prompt(`Nieuwe taak voor "${goalTitle}":`);
-    if (!input) return;
-    const parts = input.split(' ');
-    const date = parseHumanDate(prompt("Wanneer? (ma, morgen, vandaag — of leeg voor inbox)"));
-    await supabaseClient.from('tasks').insert({
-        verb: parts[0],
-        object: parts.slice(1).join(' '),
-        role: activeRoles[0],
-        goal_id: goalId,
-        status: date ? 'planned' : 'inbox',
-        planned_for: date ? formatDateLocalISO(date) : null
-    });
-    toggleGoalTasks(goalId, goalTitle);
-    refreshAll();
-}
-
-async function loadSidebarProjects() {
-    const { data: projects } = await supabaseClient
-        .from('projects')
-        .select('*')
-        .order('name');
-
-    const filtered = (projects || []).filter(p =>
-        !activeRoles.length || activeRoles.includes(p.role)
-    );
-
-    // Groepeer: projecten onder een doel, en losse projecten
-    const underGoal = filtered.filter(p => p.goal_id);
-    const standalone = filtered.filter(p => !p.goal_id);
-
-    document.getElementById('projectTree').innerHTML = `
-        ${standalone.map(p => renderProjectTile(p)).join('')}
-    `;
-
-    // Plak projecten die onder een doel hangen, in het goal-blokje
-    underGoal.forEach(p => {
-        const goalContainer = document.getElementById(`goal-tasks-${p.goal_id}`);
-        if (goalContainer && goalContainer.style.display === 'block') {
-            const existing = document.getElementById(`project-tile-${p.id}`);
-            if (!existing) {
-                goalContainer.insertAdjacentHTML('beforeend', renderProjectTile(p, true));
-            }
+            const section = document.getElementById('goals-section');
+            if (!role) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+            const { data } = await supabaseClient.from('goals').select('*').eq('role', role).eq('quarter', 1);
+            document.getElementById('goals-list').innerHTML = (data || []).map(g => `
+                <div class="goal-item" id="goal-${g.id}" onclick="toggleGoalTasks('${g.id}','${g.title}')">
+                    <strong>${g.title}</strong>
+                    <small style="display:block; color:var(--text-muted)">${g.refinement || '+ focus'}</small>
+                    <div id="goal-tasks-${g.id}" style="display:none; margin-top:8px;"></div>
+                </div>
+            `).join('');
         }
-    });
-}
-async function triggerNewProject() {
-    const name = prompt("Naam van het nieuwe project:");
-    if (!name) return;
 
-    // Focusgebied: actief of zelf kiezen
-    let role = activeRoles[0];
-    if (!role) {
-        const keuze = prompt("Focusgebied:\n1: Werk\n2: Thuis\n3: Gezondheid\n4: Sociaal");
-        const rollen = { '1': 'Werk', '2': 'Thuis', '3': 'Gezondheid', '4': 'CommunitySocial' };
-        role = rollen[keuze] || null;
-    }
-
-    // Optioneel koppelen aan ontwikkeldoel
-    let goal_id = null;
-    if (role) {
-        const { data: goals } = await supabaseClient.from('goals').select('*').eq('role', role);
-        if (goals && goals.length > 0) {
-            const opties = goals.map((g, i) => `${i+1}: ${g.title}`).join('\n');
-            const keuze = prompt(`Koppelen aan ontwikkeldoel? (leeg = geen)\n${opties}`);
-            if (keuze) {
-                const idx = parseInt(keuze) - 1;
-                if (goals[idx]) goal_id = goals[idx].id;
-            }
+        async function toggleGoalTasks(goalId, goalTitle) {
+            const container = document.getElementById(`goal-tasks-${goalId}`);
+            if (container.style.display === 'block') { container.style.display = 'none'; return; }
+            container.style.display = 'block';
+            const { data } = await supabaseClient.from('tasks').select('*').eq('goal_id', goalId).neq('status', 'done');
+            container.innerHTML = `
+                ${(data || []).map(t => `
+                    <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
+                         onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                        <span>• ${t.verb} ${t.object || ''}</span>
+                        <button onclick="event.stopPropagation(); completeTask('${t.id}')"
+                                style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
+                    </div>
+                `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
+                <button onclick="event.stopPropagation(); addTaskToGoal('${goalId}','${goalTitle}')"
+                        style="margin-top:8px; width:100%; border:1px dashed #ccc; background:none; padding:5px; border-radius:6px; cursor:pointer; font-size:0.75rem;">
+                    + Taak toevoegen
+                </button>
+            `;
         }
-    }
 
-    const { error } = await supabaseClient.from('projects').insert({
-        name,
-        role: role || null,
-        goal_id: goal_id || null
-    });
+        async function loadSidebarProjects() {
+            const { data: projects } = await supabaseClient.from('projects').select('*').order('name');
+            const filtered = (projects || []).filter(p => !activeRoles.length || activeRoles.includes(p.role));
+            const standalone = filtered.filter(p => !p.goal_id);
+            const underGoal = filtered.filter(p => p.goal_id);
 
-    if (error) { console.error('project insert error:', error); return; }
-    loadSidebarProjects();
-}
-function renderProjectTile(p, compact = false) {
-    return `
-        <div id="project-tile-${p.id}"
-             class="goal-item"
-             style="border-left-color: #a8c7fa; cursor:pointer; ${compact ? 'margin-left:8px;' : ''}"
-             onclick="toggleProjectTasks('${p.id}', '${p.name}', '${p.role || ''}')">
-            <strong>${roleIcon(p.role)} ${p.name}</strong>
-            <div id="project-tasks-${p.id}" style="display:none; margin-top:8px;"></div>
-        </div>
-    `;
-}
-async function toggleProjectTasks(projectId, projectName, role) {
-    const container = document.getElementById(`project-tasks-${projectId}`);
-    if (container.style.display === 'block') { container.style.display = 'none'; return; }
-    container.style.display = 'block';
+            document.getElementById('projectTree').innerHTML = standalone.map(p => renderProjectTile(p)).join('');
 
-    const { data } = await supabaseClient
-        .from('tasks')
-        .select('*')
-        .eq('project_id', projectId)
-        .neq('status', 'done');
+            underGoal.forEach(p => {
+                const goalContainer = document.getElementById(`goal-tasks-${p.goal_id}`);
+                if (goalContainer && goalContainer.style.display === 'block') {
+                    if (!document.getElementById(`project-tile-${p.id}`)) {
+                        goalContainer.insertAdjacentHTML('beforeend', renderProjectTile(p, true));
+                    }
+                }
+            });
+        }
 
-    container.innerHTML = `
-        ${(data || []).map(t => `
-            <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
-                 onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object}','${t.source_url || ''}')">
-                <span>• ${t.verb} ${t.object}</span>
-                <button onclick="event.stopPropagation(); completeTask('${t.id}')"
-                        style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
-            </div>
-        `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
-        <button onclick="event.stopPropagation(); addTaskToProject('${projectId}', '${projectName}', '${role}')"
-                style="margin-top:8px; width:100%; border:1px dashed #ccc; background:none; padding:5px; border-radius:6px; cursor:pointer; font-size:0.75rem;">
-            + Taak toevoegen
-        </button>
-    `;
-}
-function roleIcon(role) {
-    const icons = {
-        'Werk': '💼',
-        'Thuis': '🏠',
-        'Gezondheid': '🥗',
-        'CommunitySocial': '🌱'
-    };
-    return icons[role] || '📁';
-}
-async function addTaskToProject(projectId, projectName, role) {
-    const input = prompt(`Nieuwe taak voor "#${projectName}":`);
-    if (!input) return;
-    const parts = input.split(' ');
-    const date = parseHumanDate(prompt("Wanneer? (ma, morgen, vandaag — of leeg voor inbox)"));
+        function renderProjectTile(p, compact = false) {
+            return `
+                <div id="project-tile-${p.id}" class="goal-item"
+                     style="border-left-color:#a8c7fa; cursor:pointer; ${compact ? 'margin-left:8px;' : ''}"
+                     onclick="toggleProjectTasks('${p.id}','${p.name}','${p.role || ''}')">
+                    <strong>${roleIcon(p.role)} ${p.name}</strong>
+                    <div id="project-tasks-${p.id}" style="display:none; margin-top:8px;"></div>
+                </div>
+            `;
+        }
 
-    const { error } = await supabaseClient.from('tasks').insert({
-        verb: parts[0],
-        object: parts.slice(1).join(' '),
-        role: role || activeRoles[0] || null,
-        project_id: projectId,
-        status: date ? 'planned' : 'inbox',
-        planned_for: date ? formatDateLocalISO(date) : null
-    });
+        async function toggleProjectTasks(projectId, projectName, role) {
+            const container = document.getElementById(`project-tasks-${projectId}`);
+            if (container.style.display === 'block') { container.style.display = 'none'; return; }
+            container.style.display = 'block';
+            const { data } = await supabaseClient.from('tasks').select('*').eq('project_id', projectId).neq('status', 'done');
+            container.innerHTML = `
+                ${(data || []).map(t => `
+                    <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
+                         onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                        <span>• ${t.verb} ${t.object || ''}</span>
+                        <button onclick="event.stopPropagation(); completeTask('${t.id}')"
+                                style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
+                    </div>
+                `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
+                <button onclick="event.stopPropagation(); addTaskToProject('${projectId}','${projectName}','${role}')"
+                        style="margin-top:8px; width:100%; border:1px dashed #ccc; background:none; padding:5px; border-radius:6px; cursor:pointer; font-size:0.75rem;">
+                    + Taak toevoegen
+                </button>
+            `;
+        }
 
-    if (error) { console.error('insert error:', error); return; }
-    toggleProjectTasks(projectId, projectName, role);
-    refreshAll();
-}
+        async function completeTask(id) {
+            await supabaseClient.from('tasks').update({ status: 'done' }).eq('id', id);
+            refreshAll();
+        }
 
-        async function completeTask(id) { await supabaseClient.from('tasks').update({ status: 'done' }).eq('id', id); refreshAll(); }
         function refreshAll() { loadTodayTasks(); loadInbox(); loadWeekTasks(); loadSidebarProjects(); }
+
         function triggerNewGoal() {
-            const r = activeRoles[0]; if (!r) return alert("Selecteer eerst een thema");
+            const r = activeRoles[0];
+            if (!r) return alert("Selecteer eerst een focusgebied");
             const t = prompt("Nieuw doel voor " + r);
             if (t) supabaseClient.from('goals').insert({ role: r, title: t, quarter: 1, year: 2026 }).then(() => loadGoals(r));
         }
-        async function editGoal(id, title, ref) {
-            const r = prompt(`Focus voor ${title}:`, ref);
-            if (r !== null) { await supabaseClient.from('goals').update({ refinement: r }).eq('id', id); loadGoals(activeRoles[0]); }
-        }
 
         document.querySelectorAll('.role-tile').forEach(tile => {
-            tile.addEventListener('click', function() {
-                const r = this.dataset.role; activeRoles = activeRoles.includes(r) ? [] : [r];
+            tile.addEventListener('click', function () {
+                const r = this.dataset.role;
+                activeRoles = activeRoles.includes(r) ? [] : [r];
                 document.querySelectorAll('.role-tile').forEach(t => t.classList.toggle('active', activeRoles.includes(t.dataset.role)));
-                loadGoals(activeRoles[0]); refreshAll();
+                loadGoals(activeRoles[0]);
+                refreshAll();
             });
         });
 
