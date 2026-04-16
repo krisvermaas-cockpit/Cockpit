@@ -308,6 +308,48 @@
             background: white;
         }
         .sheet-select:focus { outline: none; border-color: var(--gemini-accent); }
+
+        /* ── Dagstart balk ── */
+        .dagstart-balk {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 480px) {
+            .dagstart-balk { grid-template-columns: 1fr; }
+        }
+        .dagstart-kaart {
+            background: var(--gemini-card);
+            border: 1px solid #e3e3e3;
+            border-radius: 16px;
+            padding: 14px 16px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .dagstart-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .dagstart-tekst {
+            color: var(--text-main);
+            font-style: italic;
+        }
+        .dagstart-ref {
+            font-size: 0.75rem;
+            color: var(--gemini-accent);
+            margin-top: 4px;
+            font-style: normal;
+        }
+        .dagstart-skeleton {
+            color: #ccc;
+            letter-spacing: 0.1em;
+        }
     </style>
 </head>
 <body>
@@ -365,6 +407,18 @@
                 </select>
                 <input id="dateInput" placeholder="Wanneer?" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; min-width:0; flex:1; font-size: 0.8rem;">
                 <input id="linkInput" placeholder="🔗 Link" style="border-radius:15px; border:1px solid #eee; padding:5px 10px; min-width:0; flex:1; font-size: 0.8rem;">
+            </div>
+        </div>
+
+        <div class="dagstart-balk">
+            <div class="dagstart-kaart">
+                <div class="dagstart-label">Dagvers</div>
+                <div class="dagstart-tekst" id="dagvers-tekst"><span class="dagstart-skeleton">·····</span></div>
+                <div class="dagstart-ref" id="dagvers-ref"></div>
+            </div>
+            <div class="dagstart-kaart">
+                <div class="dagstart-label">Weer in Houten</div>
+                <div class="dagstart-tekst" id="weer-tekst"><span class="dagstart-skeleton">·····</span></div>
             </div>
         </div>
 
@@ -848,6 +902,79 @@
             if (t) supabaseClient.from('goals').insert({ role: r, title: t, quarter: 1, year: 2026 }).then(() => loadGoals(r));
         }
 
+        // ── Dagstart: vers + weer ──
+        const VERZEN = [
+            { tekst: "The Lord is my shepherd, I lack nothing.", ref: "Psalm 23:1 · NIV" },
+            { tekst: "Whatever I have, wherever I am, I can make it through anything in the One who makes me who I am.", ref: "Filippenzen 4:13 · MSG" },
+            { tekst: "Those who hope in the Lord will renew their strength. They will soar on wings like eagles.", ref: "Jesaja 40:31 · NIV" },
+            { tekst: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.", ref: "Spreuken 3:5-6 · NIV" },
+            { tekst: "And we know that in all things God works for the good of those who love him.", ref: "Romeinen 8:28 · NIV" },
+            { tekst: "Come to me, all you who are weary and burdened, and I will give you rest. Take my yoke upon you and learn from me, for I am gentle and humble in heart.", ref: "Matteüs 11:28-29 · NIV" },
+            { tekst: "Because of the Lord's great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.", ref: "Klaagliederen 3:22-23 · NIV" },
+            { tekst: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.", ref: "Jozua 1:9 · NIV" },
+            { tekst: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.", ref: "Jeremia 29:11 · NIV" },
+            { tekst: "I can do all this through him who gives me strength.", ref: "Filippenzen 4:13 · NIV" },
+            { tekst: "The Lord is my light and my salvation — whom shall I fear?", ref: "Psalm 27:1 · NIV" },
+            { tekst: "Cast all your anxiety on him because he cares for you.", ref: "1 Petrus 5:7 · NIV" },
+            { tekst: "Be still, and know that I am God.", ref: "Psalm 46:10 · NIV" },
+            { tekst: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.", ref: "Filippenzen 4:6 · NIV" },
+            { tekst: "The Lord bless you and keep you; the Lord make his face shine on you and be gracious to you.", ref: "Numeri 6:24-25 · NIV" },
+            { tekst: "Even though I walk through the darkest valley, I will fear no evil, for you are with me.", ref: "Psalm 23:4 · NIV" },
+            { tekst: "For nothing will be impossible with God.", ref: "Lucas 1:37 · NIV" },
+            { tekst: "He gives strength to the weary and increases the power of the weak.", ref: "Jesaja 40:29 · NIV" },
+            { tekst: "Delight yourself in the Lord, and he will give you the desires of your heart.", ref: "Psalm 37:4 · NIV" },
+            { tekst: "The name of the Lord is a fortified tower; the righteous run to it and are safe.", ref: "Spreuken 18:10 · NIV" },
+        ];
+
+        function getDagVers() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 0);
+            const diff = now - start;
+            const dayOfYear = Math.floor(diff / 86400000);
+            const seed = now.getFullYear() * 1000 + dayOfYear;
+            return VERZEN[seed % VERZEN.length];
+        }
+
+        function weerOmschrijving(code) {
+            if (code === 0) return '☀️ Helder';
+            if (code <= 3) return '🌤 Bewolkt';
+            if (code === 45 || code === 48) return '🌫 Mist';
+            if (code >= 51 && code <= 67) return '🌧 Regen';
+            if (code >= 71 && code <= 77) return '❄️ Sneeuw';
+            if (code >= 80 && code <= 82) return '🌦 Buien';
+            if (code >= 95) return '⛈ Onweer';
+            return '🌈 Wisselvallig';
+        }
+
+        function loadDagstart() {
+            const today = formatDateLocalISO(new Date());
+
+            // Dagvers
+            const vers = getDagVers();
+            document.getElementById('dagvers-tekst').textContent = vers.tekst;
+            document.getElementById('dagvers-ref').textContent = vers.ref;
+
+            // Weer — cache per dag
+            const cacheKey = `weer-${today}`;
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                document.getElementById('weer-tekst').textContent = cached;
+            } else {
+                fetch('https://api.open-meteo.com/v1/forecast?latitude=52.029&longitude=5.169&current=temperature_2m,weathercode&temperature_unit=celsius')
+                    .then(r => r.json())
+                    .then(data => {
+                        const temp = Math.round(data.current.temperature_2m);
+                        const omschrijving = weerOmschrijving(data.current.weathercode);
+                        const tekst = `${omschrijving} · ${temp}°C`;
+                        localStorage.setItem(cacheKey, tekst);
+                        document.getElementById('weer-tekst').textContent = tekst;
+                    })
+                    .catch(() => {
+                        document.getElementById('weer-tekst').textContent = '— niet beschikbaar';
+                    });
+            }
+        }
+
         document.querySelectorAll('.role-tile').forEach(tile => {
             tile.addEventListener('click', function () {
                 const r = this.dataset.role;
@@ -858,6 +985,7 @@
             });
         });
 
+        loadDagstart();
         refreshAll();
     </script>
 </body>
