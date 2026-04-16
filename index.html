@@ -351,6 +351,55 @@
             letter-spacing: 0.1em;
         }
 
+        /* ── Google Calendar sectie ── */
+        .cal-card {
+            background: var(--gemini-card);
+            border: 1px solid #e3e3e3;
+            border-radius: 16px;
+            padding: 14px 16px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+        .cal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .cal-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        .cal-auth-btn {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--gemini-accent);
+            color: var(--gemini-accent);
+            background: none;
+            cursor: pointer;
+        }
+        .cal-auth-btn:hover { background: #e8f0fe; }
+        .cal-event-row {
+            display: flex;
+            gap: 12px;
+            padding: 5px 0;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 0.85rem;
+            align-items: baseline;
+        }
+        .cal-event-row:last-child { border-bottom: none; }
+        .cal-time {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            min-width: 58px;
+            flex-shrink: 0;
+        }
+
         /* ── Mobiel: verberg prompt-box, toon FAB ── */
         @media (max-width: 768px) {
             .prompt-box { display: none; }
@@ -456,6 +505,16 @@
             </div>
         </div>
 
+        <!-- GOOGLE CALENDAR SECTIE -->
+        <div class="cal-card">
+            <div class="cal-header">
+                <span class="cal-title">📅 Agenda vandaag</span>
+                <button class="cal-auth-btn" id="cal-auth-btn" onclick="calSignIn()" style="display:none;">Verbind agenda</button>
+            </div>
+            <div id="cal-events"><span style="color:#ccc; letter-spacing:0.1em;">·····</span></div>
+        </div>
+        <!-- EINDE GOOGLE CALENDAR SECTIE -->
+
         <div class="dashboard-grid">
             <section class="glass-card">
                 <h2>Vandaag ✨</h2>
@@ -482,7 +541,116 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleCalendar()"></script>
     <script>
+        // ────────────────────────────────────────────────────────
+        // GOOGLE CALENDAR — vul hier je Client ID in
+        // Aanmaken via: console.cloud.google.com
+        //   → APIs & Services → Credentials → OAuth 2.0 Client ID
+        //   → Type: Web application
+        //   → Authorized JavaScript origins: jouw domein (of localhost)
+        // ────────────────────────────────────────────────────────
+        const GOOGLE_CLIENT_ID = 'JOUW_CLIENT_ID_HIER.apps.googleusercontent.com';
+        // ── Google Calendar ──
+        let calTokenClient;
+
+        function initGoogleCalendar() {
+            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.startsWith('JOUW')) {
+                document.getElementById('cal-events').innerHTML =
+                    '<span style="color:var(--text-muted); font-size:0.8rem;">Vul een Google Client ID in om de agenda te koppelen.</span>';
+                return;
+            }
+            calTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/calendar.readonly',
+                callback: (resp) => {
+                    if (resp.error) { calShowAuthBtn(); return; }
+                    const expiry = Date.now() + (resp.expires_in - 60) * 1000;
+                    localStorage.setItem('goog_cal_token', resp.access_token);
+                    localStorage.setItem('goog_cal_expiry', expiry);
+                    fetchCalendarEvents(resp.access_token);
+                }
+            });
+            const token = localStorage.getItem('goog_cal_token');
+            const expiry = parseInt(localStorage.getItem('goog_cal_expiry') || '0');
+            if (token && Date.now() < expiry) {
+                fetchCalendarEvents(token);
+            } else {
+                calShowAuthBtn();
+            }
+        }
+
+        function calSignIn() {
+            calTokenClient.requestAccessToken({ prompt: '' });
+        }
+
+        function calShowAuthBtn() {
+            document.getElementById('cal-auth-btn').style.display = 'inline-block';
+            document.getElementById('cal-events').innerHTML =
+                '<span style="color:var(--text-muted); font-size:0.8rem;">Koppel je agenda om afspraken te zien.</span>';
+        }
+
+        async function fetchCalendarEvents(token) {
+            document.getElementById('cal-auth-btn').style.display = 'none';
+            document.getElementById('cal-events').innerHTML =
+                '<span style="color:#ccc; letter-spacing:0.1em;">·····</span>';
+
+            const now = new Date();
+            const start = new Date(now); start.setHours(0, 0, 0, 0);
+            const end   = new Date(now); end.setHours(23, 59, 59, 999);
+
+            const params = new URLSearchParams({
+                timeMin: start.toISOString(),
+                timeMax: end.toISOString(),
+                singleEvents: 'true',
+                orderBy: 'startTime',
+                maxResults: '20'
+            });
+
+            const res = await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.status === 401) {
+                localStorage.removeItem('goog_cal_token');
+                localStorage.removeItem('goog_cal_expiry');
+                calShowAuthBtn();
+                return;
+            }
+
+            const data = await res.json();
+            renderCalendarEvents(data.items || []);
+        }
+
+        function renderCalendarEvents(events) {
+            const container = document.getElementById('cal-events');
+            if (!events.length) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">Vandaag geen afspraken 🙌</div>';
+                return;
+            }
+
+            // Hele-dag events bovenaan, daarna chronologisch
+            const allDay = events.filter(e => e.start.date && !e.start.dateTime);
+            const timed  = events.filter(e => e.start.dateTime);
+            const sorted = [...allDay, ...timed];
+            const visible = sorted.slice(0, 6);
+            const extra   = sorted.length - visible.length;
+
+            container.innerHTML = visible.map(e => {
+                const time = e.start.dateTime
+                    ? new Date(e.start.dateTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+                    : 'Hele dag';
+                const title = e.summary || '(geen titel)';
+                return `<div class="cal-event-row">
+                    <span class="cal-time">${time}</span>
+                    <span>${title}</span>
+                </div>`;
+            }).join('') + (extra > 0
+                ? `<div style="font-size:0.75rem; color:var(--text-muted); padding-top:6px;">+ ${extra} meer</div>`
+                : '');
+        }
+
         const supabaseClient = supabase.createClient(
             "https://fgogcqowvnymnpuvxdee.supabase.co",
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2djcW93dm55bW5wdXZ4ZGVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTA1NTksImV4cCI6MjA4NjM4NjU1OX0.pQkqm6JOyv6mbxn-gl00HDCG0uahRziwhX3tcIaaqhA"
