@@ -350,6 +350,40 @@
             color: #ccc;
             letter-spacing: 0.1em;
         }
+
+        /* ── Mobiel: verberg prompt-box, toon FAB ── */
+        @media (max-width: 768px) {
+            .prompt-box { display: none; }
+            .main-content { padding-bottom: 96px; }
+        }
+
+        .fab {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--gemini-accent);
+            color: white;
+            border: none;
+            font-size: 1.6rem;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(26,115,232,0.45);
+            z-index: 1500;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .fab:active {
+            transform: scale(0.93);
+            box-shadow: 0 2px 8px rgba(26,115,232,0.35);
+        }
+        @media (max-width: 768px) {
+            .fab { display: flex; }
+        }
     </style>
 </head>
 <body>
@@ -436,6 +470,9 @@
         <h2 style="width: 100%; max-width: 800px; margin-top: 40px; font-size: 1rem; color: var(--text-muted);">Deze Week</h2>
         <div id="week-grid" class="week-grid"></div>
     </main>
+
+    <!-- FAB -->
+    <button class="fab" onclick="openTaskSheet()" aria-label="Taak toevoegen">＋</button>
 
     <!-- Bottom Sheet -->
     <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
@@ -900,6 +937,79 @@
             if (!r) return alert("Selecteer eerst een focusgebied");
             const t = prompt("Nieuw doel voor " + r);
             if (t) supabaseClient.from('goals').insert({ role: r, title: t, quarter: 1, year: 2026 }).then(() => loadGoals(r));
+        }
+
+        // ── FAB: taak toevoegen via bottom sheet ──
+        function openTaskSheet() {
+            openSheet(`
+                <div class="sheet-title">+ Taak toevoegen</div>
+                <input class="sheet-input" id="fab-task" placeholder="Wat ga je doen?" autofocus
+                       onkeydown="if(event.key==='Enter') addTaskFromSheet()">
+                <div class="sheet-section-label">Focusgebied</div>
+                <select class="sheet-select" id="fab-role">
+                    <option value="Werk">💼 Werk</option>
+                    <option value="Thuis">🏠 Thuis</option>
+                    <option value="Gezondheid">🥗 Health</option>
+                    <option value="CommunitySocial">🌱 Sociaal</option>
+                </select>
+                <div class="sheet-section-label">Wanneer?</div>
+                <div class="sheet-btn-row">
+                    <button class="sheet-btn" onclick="fabQuickPlan('vandaag')">📅 Vandaag</button>
+                    <button class="sheet-btn" onclick="fabQuickPlan('morgen')">➡️ Morgen</button>
+                    <button class="sheet-btn" onclick="fabQuickPlan('inbox')">📥 Inbox</button>
+                </div>
+                <input class="sheet-input" id="fab-date" placeholder="Of typ: ma, wo, 23 apr…">
+                <input class="sheet-input" id="fab-link" placeholder="🔗 Link (optioneel)">
+                <button class="sheet-btn primary" style="width:100%;" onclick="addTaskFromSheet()">Toevoegen</button>
+            `);
+            // Zet focusgebied op actief filter als dat bestaat
+            if (activeRoles[0]) {
+                setTimeout(() => {
+                    const sel = document.getElementById('fab-role');
+                    if (sel) sel.value = activeRoles[0];
+                }, 0);
+            }
+        }
+
+        async function addTaskFromSheet() {
+            const text = document.getElementById('fab-task').value.trim();
+            if (!text) return;
+            const role = document.getElementById('fab-role').value;
+            const dateRaw = document.getElementById('fab-date').value;
+            const url = document.getElementById('fab-link').value.trim();
+            const date = parseHumanDate(dateRaw);
+            const parts = text.split(' ');
+            await supabaseClient.from('tasks').insert({
+                verb: parts[0],
+                object: parts.slice(1).join(' '),
+                role,
+                status: date ? 'planned' : 'inbox',
+                planned_for: date ? formatDateLocalISO(date) : null,
+                source_url: url || null
+            });
+            closeSheet();
+            refreshAll();
+        }
+
+        async function fabQuickPlan(when) {
+            const text = document.getElementById('fab-task').value.trim();
+            if (!text) { document.getElementById('fab-task').focus(); return; }
+            const role = document.getElementById('fab-role').value;
+            const url = document.getElementById('fab-link').value.trim();
+            let date = null;
+            if (when === 'vandaag') date = formatDateLocalISO(new Date());
+            if (when === 'morgen') { const m = new Date(); m.setDate(m.getDate()+1); date = formatDateLocalISO(m); }
+            const parts = text.split(' ');
+            await supabaseClient.from('tasks').insert({
+                verb: parts[0],
+                object: parts.slice(1).join(' '),
+                role,
+                status: date ? 'planned' : 'inbox',
+                planned_for: date,
+                source_url: url || null
+            });
+            closeSheet();
+            refreshAll();
         }
 
         // ── Dagstart: vers + weer ──
