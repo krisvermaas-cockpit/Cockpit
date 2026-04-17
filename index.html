@@ -184,6 +184,17 @@
         }
 
         .overdue { color: var(--danger); font-weight: bold; font-size: 0.7rem; margin-right: 5px; }
+
+        @keyframes taskComplete {
+            0%   { background: white; }
+            20%  { background: #e6f4ea; }
+            100% { opacity: 0; transform: translateX(18px); max-height: 0; padding: 0; margin: 0; }
+        }
+        .task-completing {
+            animation: taskComplete 0.45s ease forwards;
+            pointer-events: none;
+            overflow: hidden;
+        }
         ul { list-style: none; padding: 0; margin: 0; }
         li { padding: 10px 0; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center; }
 
@@ -663,6 +674,11 @@
 
         let activeRoles = [];
         let sheetTaskId = null;
+        const taskCache = {}; // id → taakobject, voorkomt string-escaping bugs in onclick
+
+        function currentQuarter() {
+            return Math.ceil((new Date().getMonth() + 1) / 3);
+        }
 
         // ── Menu ──
         function toggleMenu() {
@@ -684,8 +700,11 @@
         }
 
         // ── Taak beheren via bottom sheet ──
-        async function manageTask(id, currentVerb, currentObject, currentUrl) {
+        async function manageTask(id) {
             sheetTaskId = id;
+            const t = taskCache[id] || {};
+            const currentVerb   = t.verb       || '';
+            const currentObject = t.object     || '';
 
             const [{ data: goals }, { data: projects }] = await Promise.all([
                 supabaseClient.from('goals').select('*').order('title'),
@@ -699,8 +718,8 @@
                 <div class="sheet-title">✏️ ${currentVerb} ${currentObject}</div>
 
                 <div class="sheet-section-label">Tekst aanpassen</div>
-                <input class="sheet-input" id="sheet-verb" value="${currentVerb}" placeholder="Werkwoord">
-                <input class="sheet-input" id="sheet-object" value="${currentObject}" placeholder="Omschrijving">
+                <input class="sheet-input" id="sheet-verb" value="${currentVerb.replace(/"/g, '&quot;')}" placeholder="Werkwoord">
+                <input class="sheet-input" id="sheet-object" value="${currentObject.replace(/"/g, '&quot;')}" placeholder="Omschrijving">
 
                 <div class="sheet-section-label">Plannen</div>
                 <div class="sheet-btn-row">
@@ -929,14 +948,15 @@
         async function loadTodayTasks() {
             const today = formatDateLocalISO(new Date());
             const { data } = await supabaseClient.from('tasks').select('*').lte('planned_for', today).neq('status', 'done');
+            (data || []).forEach(t => { taskCache[t.id] = t; });
             document.getElementById('today-list').innerHTML = (data || []).map(t => `
                 <li>
-                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}')">
                         ${t.planned_for < today ? '<span class="overdue">OVER TIJD</span>' : ''}
                         <strong>${t.verb}</strong> ${t.object || ''}
                         ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
                     </div>
-                    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+                    <button class="complete-btn" onclick="completeTask('${t.id}', this)">✓</button>
                 </li>`).join('') || '<li style="color:var(--text-muted); font-size:0.9rem;">Klaar voor vandaag! 🎉</li>';
         }
 
@@ -944,13 +964,14 @@
             let q = supabaseClient.from('tasks').select('*').eq('status', 'inbox');
             if (activeRoles.length) q = q.in('role', activeRoles);
             const { data } = await q;
+            (data || []).forEach(t => { taskCache[t.id] = t; });
             document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
                 <li>
-                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                    <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}')">
                         <strong>${t.verb}</strong> ${t.object || ''}
                         ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
                     </div>
-                    <button class="complete-btn" onclick="completeTask('${t.id}')">✓</button>
+                    <button class="complete-btn" onclick="completeTask('${t.id}', this)">✓</button>
                 </li>`).join('') || '<li style="color:var(--text-muted); font-size:0.9rem;">Inbox leeg ✨</li>';
         }
 
@@ -970,6 +991,7 @@
 
             const tasksByDay = {};
             (data || []).forEach(t => {
+                taskCache[t.id] = t;
                 if (!tasksByDay[t.planned_for]) tasksByDay[t.planned_for] = [];
                 tasksByDay[t.planned_for].push(t);
             });
@@ -985,7 +1007,7 @@
                     <div class="week-day-title">${d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' })}</div>
                     ${dayTasks.map(t => `
                         <div style="font-size:0.7rem; margin-bottom:4px; cursor:pointer;"
-                             onclick="manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                             onclick="manageTask('${t.id}')">
                             • ${t.verb} ${t.object || ''}
                         </div>
                     `).join('')}
@@ -1017,7 +1039,7 @@
             const section = document.getElementById('goals-section');
             if (!role) { section.style.display = 'none'; return; }
             section.style.display = 'block';
-            const { data } = await supabaseClient.from('goals').select('*').eq('role', role).eq('quarter', 1);
+            const { data } = await supabaseClient.from('goals').select('*').eq('role', role).eq('quarter', currentQuarter());
             document.getElementById('goals-list').innerHTML = (data || []).map(g => `
                 <div class="goal-item" id="goal-${g.id}" onclick="toggleGoalTasks('${g.id}','${g.title}')">
                     <strong>${g.title}</strong>
@@ -1032,12 +1054,13 @@
             if (container.style.display === 'block') { container.style.display = 'none'; return; }
             container.style.display = 'block';
             const { data } = await supabaseClient.from('tasks').select('*').eq('goal_id', goalId).neq('status', 'done');
+            (data || []).forEach(t => { taskCache[t.id] = t; });
             container.innerHTML = `
                 ${(data || []).map(t => `
                     <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
-                         onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                         onclick="event.stopPropagation(); manageTask('${t.id}')">
                         <span>• ${t.verb} ${t.object || ''}</span>
-                        <button onclick="event.stopPropagation(); completeTask('${t.id}')"
+                        <button onclick="event.stopPropagation(); completeTask('${t.id}', this)"
                                 style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
                     </div>
                 `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
@@ -1082,12 +1105,13 @@
             if (container.style.display === 'block') { container.style.display = 'none'; return; }
             container.style.display = 'block';
             const { data } = await supabaseClient.from('tasks').select('*').eq('project_id', projectId).neq('status', 'done');
+            (data || []).forEach(t => { taskCache[t.id] = t; });
             container.innerHTML = `
                 ${(data || []).map(t => `
                     <div style="font-size:0.75rem; padding:4px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
-                         onclick="event.stopPropagation(); manageTask('${t.id}','${t.verb}','${t.object || ''}','${t.source_url || ''}')">
+                         onclick="event.stopPropagation(); manageTask('${t.id}')">
                         <span>• ${t.verb} ${t.object || ''}</span>
-                        <button onclick="event.stopPropagation(); completeTask('${t.id}')"
+                        <button onclick="event.stopPropagation(); completeTask('${t.id}', this)"
                                 style="background:white; border:1px solid #dadce0; color:var(--gemini-accent); width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.65rem;">✓</button>
                     </div>
                 `).join('') || '<div style="font-size:0.75rem; color:var(--text-muted);">Nog geen taken.</div>'}
@@ -1098,7 +1122,12 @@
             `;
         }
 
-        async function completeTask(id) {
+        async function completeTask(id, btn) {
+            const row = btn ? (btn.closest('li') || btn.parentElement) : null;
+            if (row) {
+                row.classList.add('task-completing');
+                await new Promise(r => setTimeout(r, 420));
+            }
             await supabaseClient.from('tasks').update({ status: 'done' }).eq('id', id);
             refreshAll();
         }
@@ -1108,8 +1137,25 @@
         function triggerNewGoal() {
             const r = activeRoles[0];
             if (!r) return alert("Selecteer eerst een focusgebied");
-            const t = prompt("Nieuw doel voor " + r);
-            if (t) supabaseClient.from('goals').insert({ role: r, title: t, quarter: 1, year: 2026 }).then(() => loadGoals(r));
+            const q = currentQuarter();
+            openSheet(`
+                <div class="sheet-title">+ Nieuw Doel — ${r}</div>
+                <input class="sheet-input" id="new-goal-title" placeholder="Naam van het doel" autofocus>
+                <input class="sheet-input" id="new-goal-refinement" placeholder="Focuszin (optioneel)">
+                <button class="sheet-btn primary" style="width:100%; margin-top:4px;" onclick="saveNewGoal('${r}',${q})">Doel aanmaken</button>
+            `);
+        }
+
+        async function saveNewGoal(role, quarter) {
+            const title = document.getElementById('new-goal-title').value.trim();
+            const refinement = document.getElementById('new-goal-refinement').value.trim();
+            if (!title) return;
+            await supabaseClient.from('goals').insert({
+                role, title, quarter, year: new Date().getFullYear(),
+                refinement: refinement || null
+            });
+            closeSheet();
+            loadGoals(role);
         }
 
         // ── FAB: taak toevoegen via bottom sheet ──
