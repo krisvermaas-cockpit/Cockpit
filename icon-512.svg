@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="116" fill="#1a73e8"/>
+  <!-- Kompasroos -->
+  <circle cx="256" cy="234" r="100" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="5"/>
+  <circle cx="256" cy="234" r="16" fill="white"/>
+  <!-- Noord -->
+  <polygon points="256,112 269,218 243,218" fill="white"/>
+  <!-- Zuid -->
+  <polygon points="256,356 269,250 243,250" fill="rgba(255,255,255,0.45)"/>
+  <!-- West -->
+  <polygon points="134,234 228,221 228,247" fill="rgba(255,255,255,0.45)"/>
+  <!-- Oost -->
+  <polygon points="378,234 284,221 284,247" fill="rgba(255,255,255,0.45)"/>
+  <!-- Label -->
+  <text x="256" y="426" font-family="system-ui, -apple-system, sans-serif" font-size="58" font-weight="700" text-anchor="middle" fill="white" letter-spacing="3">COCKPIT</text>
+</svg>
