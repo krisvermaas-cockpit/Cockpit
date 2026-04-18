@@ -18,7 +18,51 @@
             --text-muted: #5f6368;
             --sidebar-width: 260px;
             --danger: #d93025;
+
+            /* Focusgebied-kleuren */
+            --role-werk: #f9ab00;        /* geel / oker */
+            --role-werk-bg: #fef7e0;
+            --role-werk-fg: #a06300;
+
+            --role-thuis: #1e8e3e;       /* groen */
+            --role-thuis-bg: #e6f4ea;
+            --role-thuis-fg: #137333;
+
+            --role-gezondheid: #a142f4;  /* paars */
+            --role-gezondheid-bg: #f3e8fd;
+            --role-gezondheid-fg: #7627bc;
+
+            --role-sociaal: #1a73e8;     /* blauw */
+            --role-sociaal-bg: #e8f0fe;
+            --role-sociaal-fg: #1967d2;
         }
+
+        .role-badge {
+            display: inline-block;
+            font-size: 0.62rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+            margin-right: 6px;
+            vertical-align: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .role-badge.werk       { background: var(--role-werk-bg);       color: var(--role-werk-fg); }
+        .role-badge.thuis      { background: var(--role-thuis-bg);      color: var(--role-thuis-fg); }
+        .role-badge.gezondheid { background: var(--role-gezondheid-bg); color: var(--role-gezondheid-fg); }
+        .role-badge.sociaal    { background: var(--role-sociaal-bg);    color: var(--role-sociaal-fg); }
+
+        /* Kleuraccent op de role-tiles in de sidebar */
+        .role-tile[data-role="Werk"]            { border-left: 3px solid var(--role-werk); }
+        .role-tile[data-role="Thuis"]           { border-left: 3px solid var(--role-thuis); }
+        .role-tile[data-role="Gezondheid"]      { border-left: 3px solid var(--role-gezondheid); }
+        .role-tile[data-role="CommunitySocial"] { border-left: 3px solid var(--role-sociaal); }
+
+        .role-tile.active[data-role="Werk"]            { background: var(--role-werk-bg);       border-color: var(--role-werk); }
+        .role-tile.active[data-role="Thuis"]           { background: var(--role-thuis-bg);      border-color: var(--role-thuis); }
+        .role-tile.active[data-role="Gezondheid"]      { background: var(--role-gezondheid-bg); border-color: var(--role-gezondheid); }
+        .role-tile.active[data-role="CommunitySocial"] { background: var(--role-sociaal-bg);    border-color: var(--role-sociaal); }
 
         html, body {
             overflow-x: hidden;
@@ -944,6 +988,18 @@
             return icons[role] || '📁';
         }
 
+        function roleBadge(role) {
+            const map = {
+                'Werk':            { cls: 'werk',       label: 'Werk' },
+                'Thuis':           { cls: 'thuis',      label: 'Thuis' },
+                'Gezondheid':      { cls: 'gezondheid', label: 'Health' },
+                'CommunitySocial': { cls: 'sociaal',    label: 'Sociaal' },
+            };
+            const m = map[role];
+            if (!m) return '';
+            return `<span class="role-badge ${m.cls}">${m.label}</span>`;
+        }
+
         // ── Data laden ──
         async function loadTodayTasks() {
             const today = formatDateLocalISO(new Date());
@@ -953,6 +1009,7 @@
                 <li>
                     <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}')">
                         ${t.planned_for < today ? '<span class="overdue">OVER TIJD</span>' : ''}
+                        ${roleBadge(t.role)}
                         <strong>${t.verb}</strong> ${t.object || ''}
                         ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
                     </div>
@@ -968,6 +1025,7 @@
             document.getElementById('inbox-list').innerHTML = (data || []).map(t => `
                 <li>
                     <div style="cursor:pointer; flex:1;" onclick="manageTask('${t.id}')">
+                        ${roleBadge(t.role)}
                         <strong>${t.verb}</strong> ${t.object || ''}
                         ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="mail-btn" onclick="event.stopPropagation()">✉️</a>` : ''}
                     </div>
