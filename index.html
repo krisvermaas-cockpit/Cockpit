@@ -460,38 +460,63 @@
             flex-shrink: 0;
         }
 
-        /* ── Mobiel: verberg prompt-box, toon FAB ── */
-        @media (max-width: 768px) {
-            .prompt-box { display: none; }
-            .main-content { padding-bottom: 96px; }
-        }
+        /* ── Prompt-box verborgen: taak toevoegen gaat altijd via FAB ── */
+        .prompt-box { display: none; }
+        .main-content { padding-bottom: 96px; }
 
         .fab {
-            display: none;
+            display: flex;
             position: fixed;
-            bottom: 24px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
+            bottom: 28px;
+            right: 28px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: var(--gemini-accent);
             color: white;
             border: none;
-            font-size: 1.6rem;
+            font-size: 1.7rem;
             line-height: 1;
             cursor: pointer;
-            box-shadow: 0 4px 16px rgba(26,115,232,0.45);
+            box-shadow: 0 6px 20px rgba(26,115,232,0.45);
             z-index: 1500;
             align-items: center;
             justify-content: center;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .fab:hover {
+            box-shadow: 0 8px 24px rgba(26,115,232,0.55);
+            transform: translateY(-2px);
         }
         .fab:active {
             transform: scale(0.93);
             box-shadow: 0 2px 8px rgba(26,115,232,0.35);
         }
         @media (max-width: 768px) {
-            .fab { display: flex; }
+            .fab { bottom: 24px; right: 20px; width: 56px; height: 56px; font-size: 1.6rem; }
+        }
+
+        /* Dag-picker voor terugkerende taken */
+        .day-picker {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .day-picker button {
+            flex: 1;
+            min-width: 40px;
+            padding: 8px 4px;
+            border-radius: 10px;
+            border: 1px solid #e3e3e3;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .day-picker button.on {
+            background: var(--gemini-accent);
+            color: white;
+            border-color: var(--gemini-accent);
         }
     </style>
 </head>
@@ -1247,9 +1272,28 @@
                 </div>
                 <input class="sheet-input" id="fab-date" placeholder="Of typ: ma, wo, 23 apr…">
                 <input class="sheet-input" id="fab-link" placeholder="🔗 Link (optioneel)">
+
+                <div class="sheet-section-label" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Herhalen?</span>
+                    <label style="text-transform:none; font-size:0.75rem; cursor:pointer;">
+                        <input type="checkbox" id="fab-recur" onchange="toggleRecurSection()" style="vertical-align:middle;">
+                        <span style="vertical-align:middle;">Terugkerende taak</span>
+                    </label>
+                </div>
+                <div id="fab-recur-section" style="display:none;">
+                    <div class="day-picker" id="fab-days">
+                        <button type="button" data-day="1" onclick="toggleRecurDay(this)">Ma</button>
+                        <button type="button" data-day="2" onclick="toggleRecurDay(this)">Di</button>
+                        <button type="button" data-day="3" onclick="toggleRecurDay(this)">Wo</button>
+                        <button type="button" data-day="4" onclick="toggleRecurDay(this)">Do</button>
+                        <button type="button" data-day="5" onclick="toggleRecurDay(this)">Vr</button>
+                        <button type="button" data-day="6" onclick="toggleRecurDay(this)">Za</button>
+                        <button type="button" data-day="7" onclick="toggleRecurDay(this)">Zo</button>
+                    </div>
+                </div>
+
                 <button class="sheet-btn primary" style="width:100%;" onclick="addTaskFromSheet()">Toevoegen</button>
             `);
-            // Zet focusgebied op actief filter als dat bestaat
             if (activeRoles[0]) {
                 setTimeout(() => {
                     const sel = document.getElementById('fab-role');
@@ -1258,14 +1302,46 @@
             }
         }
 
+        function toggleRecurSection() {
+            const on = document.getElementById('fab-recur').checked;
+            document.getElementById('fab-recur-section').style.display = on ? 'block' : 'none';
+        }
+
+        function toggleRecurDay(btn) {
+            btn.classList.toggle('on');
+        }
+
+        function selectedRecurDays() {
+            return [...document.querySelectorAll('#fab-days button.on')]
+                .map(b => parseInt(b.dataset.day));
+        }
+
         async function addTaskFromSheet() {
             const text = document.getElementById('fab-task').value.trim();
             if (!text) return;
             const role = document.getElementById('fab-role').value;
             const dateRaw = document.getElementById('fab-date').value;
             const url = document.getElementById('fab-link').value.trim();
-            const date = parseHumanDate(dateRaw);
+            const isRecur = document.getElementById('fab-recur')?.checked;
             const parts = text.split(' ');
+
+            if (isRecur) {
+                const days = selectedRecurDays();
+                if (!days.length) { alert('Kies minimaal één dag'); return; }
+                await supabaseClient.from('recurring_tasks').insert({
+                    verb: parts[0],
+                    object: parts.slice(1).join(' '),
+                    role,
+                    days_of_week: days,
+                    active: true
+                });
+                closeSheet();
+                await syncRecurringTasks();
+                refreshAll();
+                return;
+            }
+
+            const date = parseHumanDate(dateRaw);
             await supabaseClient.from('tasks').insert({
                 verb: parts[0],
                 object: parts.slice(1).join(' '),
@@ -1297,6 +1373,50 @@
             });
             closeSheet();
             refreshAll();
+        }
+
+        // ── Terugkerende taken: synchroniseer instances voor deze week ──
+        async function syncRecurringTasks() {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const endOfWeek = new Date(today);
+            const daysUntilSunday = (7 - today.getDay()) % 7;
+            endOfWeek.setDate(today.getDate() + daysUntilSunday);
+
+            const { data: recurs } = await supabaseClient
+                .from('recurring_tasks').select('*').eq('active', true);
+            if (!recurs || !recurs.length) return;
+
+            const { data: existing } = await supabaseClient
+                .from('tasks')
+                .select('recurrence_id, planned_for')
+                .not('recurrence_id', 'is', null)
+                .gte('planned_for', formatDateLocalISO(today))
+                .lte('planned_for', formatDateLocalISO(endOfWeek));
+
+            const haveKey = new Set(
+                (existing || []).map(e => `${e.recurrence_id}|${e.planned_for}`)
+            );
+
+            const toInsert = [];
+            for (let d = new Date(today); d <= endOfWeek; d.setDate(d.getDate() + 1)) {
+                const isoDay = ((d.getDay() + 6) % 7) + 1; // 1=Ma..7=Zo
+                const iso = formatDateLocalISO(d);
+                for (const r of recurs) {
+                    if (!r.days_of_week.includes(isoDay)) continue;
+                    if (haveKey.has(`${r.id}|${iso}`)) continue;
+                    toInsert.push({
+                        verb: r.verb,
+                        object: r.object,
+                        role: r.role,
+                        status: 'planned',
+                        planned_for: iso,
+                        recurrence_id: r.id
+                    });
+                }
+            }
+            if (toInsert.length) {
+                await supabaseClient.from('tasks').insert(toInsert);
+            }
         }
 
         // ── Dagstart: vers + weer ──
@@ -1383,7 +1503,7 @@
         });
 
         loadDagstart();
-        refreshAll();
+        syncRecurringTasks().then(refreshAll);
     </script>
 </body>
 </html>
