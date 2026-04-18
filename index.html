@@ -988,6 +988,16 @@
             return icons[role] || '📁';
         }
 
+        function roleColor(role) {
+            const colors = {
+                'Werk':            'var(--role-werk)',
+                'Thuis':           'var(--role-thuis)',
+                'Gezondheid':      'var(--role-gezondheid)',
+                'CommunitySocial': 'var(--role-sociaal)'
+            };
+            return colors[role] || 'var(--gemini-accent)';
+        }
+
         function roleBadge(role) {
             const map = {
                 'Werk':            { cls: 'werk',       label: 'Werk' },
@@ -1150,7 +1160,7 @@
         function renderProjectTile(p, compact = false) {
             return `
                 <div id="project-tile-${p.id}" class="goal-item"
-                     style="border-left-color:#a8c7fa; cursor:pointer; ${compact ? 'margin-left:8px;' : ''}"
+                     style="border-left-color:${roleColor(p.role)}; cursor:pointer; ${compact ? 'margin-left:8px;' : ''}"
                      onclick="toggleProjectTasks('${p.id}','${p.name}','${p.role || ''}')">
                     <strong>${roleIcon(p.role)} ${p.name}</strong>
                     <div id="project-tasks-${p.id}" style="display:none; margin-top:8px;"></div>
